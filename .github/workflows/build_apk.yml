@@ -41,9 +41,9 @@ jobs:
 
       # The hosted Ubuntu images already ship a full Android SDK (cmdline-tools,
       # platforms;android-36, build-tools;36.0.0, platform-tools), so instead of
-      # pulling a second copy of the command line tools we accept the licences and
-      # make sure the packages this project compiles against are present. AGP can
-      # then download anything else it needs on its own.
+      # downloading a second copy of the command line tools we accept the licences
+      # and assert the packages this project compiles against are present. AGP can
+      # then fetch anything else it needs on its own.
       - name: Set up Android SDK
         shell: bash
         run: |
@@ -80,22 +80,18 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        shell: bash
-        run: flutter pub get 2>&1 | tee "${RUNNER_TEMP}/pub-get.log"
+        run: flutter pub get
 
       - name: Run Analyzer
-        shell: bash
-        run: flutter analyze --no-fatal-infos 2>&1 | tee "${RUNNER_TEMP}/analyze.log"
+        run: flutter analyze --no-fatal-infos
 
       - name: Run Tests
-        shell: bash
-        run: flutter test 2>&1 | tee "${RUNNER_TEMP}/test.log"
+        run: flutter test
 
       # Conditionally skip the heavy APK build on PRs to save CI minutes
       - name: Build Release APK
         if: github.event_name != 'pull_request'
-        shell: bash
-        run: flutter build apk --release 2>&1 | tee "${RUNNER_TEMP}/build-apk.log"
+        run: flutter build apk --release
 
       - name: Upload APK Artifact
         if: github.event_name != 'pull_request'
@@ -105,27 +101,3 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
           if-no-files-found: error
-
-      # TEMP-DEBUG: mirror the interesting lines of a failed step into check
-      # annotations, which stay readable through the API.
-      - name: Surface failure details
-        if: failure()
-        shell: bash
-        run: |
-          shopt -s nullglob
-          interesting='FAILURE:|What went wrong|Execution failed for task|\* Where|\* Try|Caused by:|error •|warning •|Some tests failed|\[E\]|Could not|No such|not accepted|Failed to'
-          for log in "${RUNNER_TEMP}"/*.log; do
-            grep -qE "${interesting}" "${log}" || continue
-            name="$(basename "${log}" .log)"
-            echo "::group::Failure summary for ${name}"
-            grep -nE "${interesting}" "${log}" | cut -c1-240 | tail -n 60
-            echo "::endgroup::"
-            {
-              grep -E "${interesting}" "${log}" | head -n 20
-              echo "--- last lines ---"
-              tail -n 10 "${log}"
-            } | grep -vE 'LintDriver|BuildOperationRunner|ThreadPoolExecutor|WorkerServer' \
-              | head -n 25 \
-              | cut -c1-240 \
-              | sed -e 's/%/%25/g' -e 's/\r//g' -e "s|^|::error title=${name}::|"
-          done

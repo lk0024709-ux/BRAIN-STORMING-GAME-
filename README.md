@@ -4,7 +4,7 @@ Neo-brutalist manga brain-training game. Procedural questions, a running stopwat
 
 ## Jaldi shuru kaise karein
 
-Flutter **3.38.1+** chahiye (stable channel). Is sandbox mein Flutter SDK installed nahi tha, isliye yahan compile nahi chala — machine pe ye steps kaafi hain:
+Flutter **3.38.1+** chahiye (stable channel — CI `3.47.6` pin karta hai, aur har push pe analyze + test + release APK chalata hai). Machine pe ye steps kaafi hain:
 
 ```bash
 flutter pub get
@@ -46,7 +46,7 @@ lib/
   screens/       onboarding, home, gameplay, rank, shop, pro, settings, legal
   widgets/       neo-brutalist chrome, avatars, cloud, comic popup, forge
 .github/workflows/build_apk.yml
-android/         AGP 9.3.1, Kotlin 2.4.20, Gradle 9.5.0
+android/         AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0
 ```
 
 Local keys include the ones the product contract asked for: `userAge`, `coins`, `total_xp`, `isProUser`.
@@ -104,9 +104,11 @@ Play icon: `branding/play_store_512.png`.
 
 ## CI
 
-`.github/workflows/build_apk.yml` runs on push, pull request, and manual dispatch. It analyzes, tests, builds a release APK, and uploads `brainspeed-iq-apk`.
+`.github/workflows/build_apk.yml` runs on push, pull request, and manual dispatch. It analyzes, tests, builds a release APK, and uploads `brainspeed-iq-apk` (PRs skip the APK build).
 
-The Android Gradle files match current Flutter stable templates (AGP 9.3.1, Kotlin 2.4.20, Gradle 9.5.0, Java 17). If `flutter create` on your machine prints newer versions, prefer those.
+The workflow pins its toolchain in the `env:` block — Flutter 3.47.6 (stable), Java 17, `platforms;android-36`, `build-tools;36.0.0` — and uses the Android SDK that the hosted Ubuntu runners already ship, so no second copy of the command line tools is downloaded. Bump `FLUTTER_VERSION` there when you bump `pubspec.yaml`.
+
+The Android Gradle files match current Flutter stable templates (AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0, Java 17). If `flutter create` on your machine prints newer versions, prefer those. Do not go back to AGP 9.3.0/9.3.1: their lint crashes on JDK 17 (`NoSuchMethodError: java.util.List.removeLast()` in the bundled `JavaDocParser`), which fails `flutter build apk --release`. The AGP 9.3 line also needs Gradle 9.5.0 or newer.
 
 ## iOS
 
