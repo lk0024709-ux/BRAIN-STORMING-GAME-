@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_config.dart';
 import '../controllers/profile_controller.dart';
 import '../services/iap_service.dart';
 import '../theme/manga_colors.dart';

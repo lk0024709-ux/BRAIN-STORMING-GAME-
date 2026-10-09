@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../models/question.dart';
 import '../services/ad_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
