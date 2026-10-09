@@ -19,7 +19,10 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "9.3.1" apply false
+    // 9.3.0/9.3.1 ship a lint that crashes on JDK 17 (NoSuchMethodError in the
+    // bundled intellij-core JavaDocParser); 9.3.2 fixed it, so stay on the latest
+    // 9.3 patch. The 9.3 line needs Gradle >= 9.5.0 and build-tools 36.0.0.
+    id("com.android.application") version "9.3.3" apply false
     id("org.jetbrains.kotlin.android") version "2.4.20" apply false
 }
 
