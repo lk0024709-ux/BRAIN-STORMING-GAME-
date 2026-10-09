@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 
 on:
   workflow_dispatch:
@@ -6,56 +6,60 @@ on:
     branches:
       - main
       - master
-      - "arena/**"
+      - 'arena/**'
   pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
-  apk:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: "17"
+          distribution: 'temurin'
+          java-version: '17'
 
+      # The streamlined SDK setup that prevents the tools installation crash
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install Android platform
-        run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
-          yes | sdkmanager --licenses || true
+        with:
+          packages: |
+            platforms;android-36
+            build-tools;36.0.0
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          cache: true
+          channel: 'stable'
 
-      - name: Flutter version
-        run: flutter --version
-
-      - name: Pub get
+      - name: Install Dependencies
         run: flutter pub get
 
-      - name: Analyze
+      - name: Run Analyzer
         run: flutter analyze --no-fatal-infos
 
-      - name: Test
+      - name: Run Tests
         run: flutter test
 
-      - name: Build release APK
+      # Conditionally skip the heavy APK build on PRs to save CI minutes
+      - name: Build Release APK
+        if: github.event_name != 'pull_request'
         run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Upload APK Artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: brainspeed-iq-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
           retention-days: 14
+          if-no-files-found: error
+          
