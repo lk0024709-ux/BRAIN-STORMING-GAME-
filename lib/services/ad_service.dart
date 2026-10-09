@@ -9,11 +9,15 @@ import '../config/app_config.dart';
 
 /// AdMob singleton with Meta Audience Network mediation.
 ///
-/// The Meta adapter is pulled in by `gma_mediation_meta` and registered by
-/// Flutter's plugin registrant. Placement mapping lives in the AdMob
-/// mediation group, not in this class. Under-13 players never initialize
-/// the SDK (COPPA: no tracking, no ads).
+/// Under-13 players never initialize the SDK (COPPA: no tracking, no ads).
+/// Pro players completely disable banner and interstitial ads.
 class AdService extends ChangeNotifier {
+  static final AdService instance = AdService._internal();
+
+  factory AdService() => instance;
+
+  AdService._internal();
+
   static const List<Type> mediationAdapters = <Type>[GmaMediationMeta];
 
   int _age = 0;
@@ -37,7 +41,7 @@ class AdService extends ChangeNotifier {
   bool get isPro => _isPro;
   bool get sdkReady => _sdkReady;
 
-  /// Banners and interstitials. Off for Pro, kids, and denied consent.
+  /// Banners and interstitials. Completely disabled for Pro, kids, and denied consent.
   bool get forcedAdsAllowed =>
       _sdkReady && _consentAllowsAds && !_isPro && !isChild;
 
@@ -129,6 +133,7 @@ class AdService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Triggers automatically after every 3 completed levels (disabled for Pro).
   Future<void> maybeShowInterstitial(int levelsCompleted) async {
     if (_configureFlight != null) await _configureFlight;
     if (!forcedAdsAllowed) return;
@@ -168,7 +173,7 @@ class AdService extends ChangeNotifier {
     unawaited(_preloadInterstitial());
   }
 
-  /// Returns true only when the player actually earned the reward.
+  /// Shows a rewarded ad. Returns true if the user earned the reward.
   Future<bool> showRewarded() async {
     if (_configureFlight != null) await _configureFlight;
     if (!rewardedAllowed) return false;
@@ -203,6 +208,21 @@ class AdService extends ChangeNotifier {
     );
     unawaited(_preloadRewarded());
     return result;
+  }
+
+  /// Rewarded ad with completion callback.
+  Future<bool> showRewardedWithCallback({
+    required Future<void> Function() onEarned,
+    VoidCallback? onFailed,
+  }) async {
+    final earned = await showRewarded();
+    if (earned) {
+      await onEarned();
+      return true;
+    } else {
+      onFailed?.call();
+      return false;
+    }
   }
 
   Future<void> showPrivacyOptions() async {

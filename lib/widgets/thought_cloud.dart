@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/manga_colors.dart';
 
+/// Large central Neo-Brutalist Manga Thought Cloud (💭)
+/// displaying the math puzzle and optional in-cloud yellow hint banner.
 class ThoughtCloud extends StatelessWidget {
   const ThoughtCloud({
     super.key,
@@ -21,21 +23,34 @@ class ThoughtCloud extends StatelessWidget {
         return Stack(
           clipBehavior: Clip.none,
           children: [
+            // Cloud puffs leading to character header
             Positioned(
-              left: 18,
-              bottom: 0,
+              left: 24,
+              bottom: 2,
+              child: _Puff(size: 20),
+            ),
+            Positioned(
+              left: 42,
+              bottom: 12,
+              child: _Puff(size: 14),
+            ),
+            Positioned(
+              right: 28,
+              bottom: 2,
               child: _Puff(size: 18),
             ),
             Positioned(
-              left: 34,
-              bottom: 10,
+              right: 44,
+              bottom: 12,
               child: _Puff(size: 12),
             ),
+
+            // Main Thought Cloud Body
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 18),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
                 decoration: BoxDecoration(
                   color: MangaColors.cloud,
                   borderRadius: BorderRadius.circular(28),
@@ -51,15 +66,29 @@ class ThoughtCloud extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '💭  $label',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.4,
-                        fontSize: 12,
+                    // Manga Cloud Header Tag
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MangaColors.paperDeep,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: MangaColors.ink, width: 2),
+                      ),
+                      child: Text(
+                        '💭  $label',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+
+                    // Central Math Puzzle Formula
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -67,31 +96,51 @@ class ThoughtCloud extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
-                          fontSize: 36,
-                          height: 1.05,
+                          fontSize: 38,
+                          height: 1.1,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
+
+                    // Yellow Banner inside Thought Cloud when Hint is activated
                     if (hint != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
+                          horizontal: 12,
+                          vertical: 9,
                         ),
                         decoration: BoxDecoration(
                           color: MangaColors.yellow,
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: MangaColors.ink, width: 2.5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: MangaColors.ink,
+                              offset: Offset(3, 3),
+                              blurRadius: 0,
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          hint!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            height: 1.25,
-                          ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('💡', style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                hint!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  height: 1.25,
+                                  color: MangaColors.ink,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -120,6 +169,13 @@ class _Puff extends StatelessWidget {
         color: MangaColors.cloud,
         shape: BoxShape.circle,
         border: Border.all(color: MangaColors.ink, width: 2.5),
+        boxShadow: const [
+          BoxShadow(
+            color: MangaColors.ink,
+            offset: Offset(2, 2),
+            blurRadius: 0,
+          ),
+        ],
       ),
     );
   }

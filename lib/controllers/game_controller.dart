@@ -11,7 +11,7 @@ import '../services/question_generator.dart';
 import '../services/reward_engine.dart';
 import 'profile_controller.dart';
 
-enum RoundPhase { playing, wrongChoice, resolved }
+enum RoundPhase { playing, resolved }
 
 enum ToolOutcome { applied, notEnoughCoins, alreadyUsed, unavailable }
 
@@ -43,7 +43,6 @@ class GameController extends ChangeNotifier {
   int? selectedIndex;
   bool hintVisible = false;
   final Set<int> removed = <int>{};
-  bool secondChanceUsed = false;
   RewardResult? reward;
   bool failed = false;
   String heroLine = '';
@@ -63,19 +62,24 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  /// Tapping an answer button immediately stops the stopwatch engine.
   Future<void> submit(int index) async {
     final current = question;
     if (current == null || !inputEnabled || removed.contains(index)) return;
+
+    // Immediately stop stopwatch on answer tap!
+    _watch.stop();
+    elapsed.value = _watch.elapsed;
     selectedIndex = index;
+
     if (index == current.correctIndex) {
       await _resolveCorrect();
-      return;
+    } else {
+      await _resolveWrong();
     }
-    phase = RoundPhase.wrongChoice;
-    _speak(BanterEvent.wrong);
-    notifyListeners();
   }
 
+  /// [💡 Hint] booster (Costs 10 coins): Opens yellow banner inside thought cloud.
   Future<ToolOutcome> useHint() async {
     if (hintVisible || phase == RoundPhase.resolved) {
       return ToolOutcome.alreadyUsed;
@@ -92,6 +96,7 @@ class GameController extends ChangeNotifier {
     return ToolOutcome.applied;
   }
 
+  /// Grants a free hint without coin deduction (e.g. from Rewarded Ad callback).
   void grantFreeHint() {
     if (hintVisible || phase == RoundPhase.resolved) return;
     hintVisible = true;
@@ -99,6 +104,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// [⚖️ 50/50] booster (Costs 25 coins): Disables 2 incorrect options.
   Future<ToolOutcome> useFifty() async {
     if (phase == RoundPhase.resolved) return ToolOutcome.unavailable;
     final current = question;
@@ -123,38 +129,25 @@ class GameController extends ChangeNotifier {
     return ToolOutcome.applied;
   }
 
-  Future<ToolOutcome> useSecondChance() async {
-    if (phase != RoundPhase.wrongChoice || secondChanceUsed) {
-      return ToolOutcome.unavailable;
-    }
-    if (profile.profile.chanceTokens > 0) {
-      final spent = await profile.consumeChanceToken();
-      if (!spent) return ToolOutcome.notEnoughCoins;
-    } else if (!await profile.trySpend(AppConfig.secondChanceCost)) {
-      return ToolOutcome.notEnoughCoins;
-    }
-    secondChanceUsed = true;
-    final wrong = selectedIndex;
-    if (wrong != null) removed.add(wrong);
-    selectedIndex = null;
-    phase = RoundPhase.playing;
-    _speak(BanterEvent.chance);
-    notifyListeners();
-    return ToolOutcome.applied;
-  }
-
-  Future<void> declineSecondChance() async {
-    if (phase != RoundPhase.wrongChoice) return;
-    _watch.stop();
-    elapsed.value = _watch.elapsed;
-    failed = true;
-    reward = null;
-    phase = RoundPhase.resolved;
-    await profile.applyMiss();
+  /// Grants free 50/50 without coin deduction (e.g. from Rewarded Ad callback).
+  void grantFreeFifty() {
+    if (phase == RoundPhase.resolved) return;
+    final current = question;
+    if (current == null) return;
+    final wrongs = <int>[
+      for (var i = 0; i < current.options.length; i++)
+        if (i != current.correctIndex && !removed.contains(i)) i,
+    ];
+    if (wrongs.length < 2) return;
+    wrongs.shuffle(_random);
+    removed
+      ..add(wrongs[0])
+      ..add(wrongs[1]);
+    _speak(BanterEvent.fifty);
     notifyListeners();
   }
 
-  /// Shows the every-3-levels interstitial before the next stopwatch starts.
+  /// Interstitial Ads trigger automatically after every 3 completed levels.
   Future<void> nextRound() async {
     final completed = reward != null;
     final levels = profile.profile.levelsCompleted;
@@ -166,8 +159,6 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> _resolveCorrect() async {
-    _watch.stop();
-    elapsed.value = _watch.elapsed;
     final result = rewards.evaluate(
       elapsed: _watch.elapsed,
       isPro: profile.isProUser,
@@ -189,13 +180,21 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _resolveWrong() async {
+    failed = true;
+    reward = null;
+    phase = RoundPhase.resolved;
+    await profile.applyMiss();
+    _speak(BanterEvent.wrong);
+    notifyListeners();
+  }
+
   void _loadRound() {
     question = generator.generate(profile.userAge);
     phase = RoundPhase.playing;
     selectedIndex = null;
     hintVisible = false;
     removed.clear();
-    secondChanceUsed = false;
     reward = null;
     failed = false;
     _speak(BanterEvent.intro);
