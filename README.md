@@ -110,6 +110,8 @@ The workflow pins its toolchain in the `env:` block — Flutter 3.47.6 (stable),
 
 The Android Gradle files match current Flutter stable templates (AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0, Java 17). If `flutter create` on your machine prints newer versions, prefer those. Do not go back to AGP 9.3.0/9.3.1: their lint crashes on JDK 17 (`NoSuchMethodError: java.util.List.removeLast()` in the bundled `JavaDocParser`), which fails `flutter build apk --release`. The AGP 9.3 line also needs Gradle 9.5.0 or newer.
 
+Caching, because the Gradle build is ~85% of the run: `setup-java` caches `~/.gradle/caches` (keyed on the `*.gradle.kts` files) and the wrapper distribution separately (keyed on `gradle-wrapper.properties`, so editing a build file does not force Gradle itself to be downloaded again), `flutter-action` caches the Flutter SDK and its engine artifacts, and `org.gradle.caching=true` lets a restored cache serve unchanged Kotlin, dex and resource tasks. The wrapper pulls `gradle-9.5.0-bin.zip` rather than `-all.zip` — CI never reads the bundled sources and docs. A cold run is ~6.5 min, of which everything except `flutter build apk --release` is ~50s.
+
 ## iOS
 
 This repo is Android-first because the requested pipeline is an APK. To add iOS:
