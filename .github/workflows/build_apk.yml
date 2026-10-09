@@ -38,6 +38,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
+          # Caches ~/.gradle/caches (keyed on the *.gradle.kts files) and the
+          # Gradle wrapper distribution separately (keyed on
+          # gradle-wrapper.properties). That is the whole cost of the release
+          # build: the APK step spends most of its time on downloads.
+          cache: 'gradle'
 
       # The hosted Ubuntu images already ship a full Android SDK (cmdline-tools,
       # platforms;android-36, build-tools;36.0.0, platform-tools), so instead of
