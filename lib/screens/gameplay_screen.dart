@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
-import '../models/question.dart';
 import '../controllers/profile_controller.dart';
 import '../services/ad_service.dart';
 import '../theme/manga_colors.dart';
@@ -32,7 +31,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    _ticker = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (!mounted) return;
       context.read<GameController>().onTick();
     });
@@ -60,7 +59,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final leave = await showConfirmDialog(
       context: context,
       title: 'LEAVE THE ROUND?',
-      body: 'The stopwatch dies if you walk out. No reward for a half-solve.',
+      body: 'The stopwatch stops if you walk out. No reward for a half-solve.',
       confirmLabel: 'LEAVE',
     );
     if (leave && mounted) Navigator.pop(context);
@@ -74,84 +73,75 @@ class _GameplayScreenState extends State<GameplayScreen> {
     if (!mounted) return;
     final soundOn = context.read<ProfileController>().profile.soundOn;
     if (!soundOn) return;
-    if (game.phase == RoundPhase.resolved) {
+    if (game.reward != null) {
       HapticFeedback.mediumImpact();
-    } else if (game.phase == RoundPhase.wrongChoice) {
+    } else {
       SystemSound.play(SystemSoundType.alert);
       HapticFeedback.heavyImpact();
     }
   }
 
-  Future<void> _shortage({
+  /// Rewarded Ad Prompt: "Watch a short ad for a Free Hint + 20 Coins?"
+  Future<void> _handleBoosterShortage({
+    required String boosterName,
     required int cost,
-    required bool offerFreeHint,
-    required Future<void> Function() retry,
-    void Function()? onFreeHint,
+    required VoidCallback onGrantFree,
   }) async {
     final ads = context.read<AdService>();
     final profile = context.read<ProfileController>();
-    while (mounted && profile.coins < cost) {
-      final choice = await showCoinShortageDialog(
-        context: context,
-        cost: cost,
-        balance: profile.coins,
-        canWatchAd: ads.rewardedAllowed,
-        offerFreeHint: offerFreeHint && onFreeHint != null,
-      );
-      if (!mounted || choice == null) return;
-      setState(() => _adBusy = true);
-      final earned = await ads.showRewarded();
-      if (mounted) setState(() => _adBusy = false);
-      if (!mounted) return;
-      if (!earned) {
-        _toast('Ad not available right now.');
-        return;
-      }
-      if (choice == ShortageChoice.freeHint) {
-        onFreeHint?.call();
-        return;
-      }
-      await profile.addCoins(AppConfig.rewardedCoinPayout);
-    }
+
+    final accepted = await showBoosterShortagePrompt(
+      context: context,
+      boosterLabel: boosterName,
+      cost: cost,
+      balance: profile.coins,
+      canWatchAd: ads.rewardedAllowed,
+    );
+
+    if (!accepted || !mounted) return;
+
+    setState(() => _adBusy = true);
+    final earned = await ads.showRewarded();
+    if (mounted) setState(() => _adBusy = false);
     if (!mounted) return;
-    if (profile.coins >= cost) await retry();
+
+    if (!earned) {
+      _toast('Ad not completed. No reward granted.');
+      return;
+    }
+
+    // Reward Callback: Grant Free Booster + 20 Coins!
+    await profile.addCoins(AppConfig.rewardedCoinPayout);
+    onGrantFree();
+    _toast('+${AppConfig.rewardedCoinPayout} Coins & Free $boosterName granted!');
   }
 
   Future<void> _hint() async {
     final game = context.read<GameController>();
     _click();
     final outcome = await game.useHint();
-    if (!mounted || outcome != ToolOutcome.notEnoughCoins) return;
-    await _shortage(
-      cost: AppConfig.hintCost,
-      offerFreeHint: true,
-      retry: game.useHint,
-      onFreeHint: game.grantFreeHint,
-    );
+    if (!mounted) return;
+    if (outcome == ToolOutcome.notEnoughCoins) {
+      await _handleBoosterShortage(
+        boosterName: 'Hint',
+        cost: AppConfig.hintCost,
+        onGrantFree: game.grantFreeHint,
+      );
+    }
   }
 
   Future<void> _fifty() async {
     final game = context.read<GameController>();
     _click();
     final outcome = await game.useFifty();
-    if (!mounted || outcome != ToolOutcome.notEnoughCoins) return;
-    await _shortage(
-      cost: AppConfig.fiftyCost,
-      offerFreeHint: false,
-      retry: game.useFifty,
-    );
-  }
-
-  Future<void> _chance() async {
-    final game = context.read<GameController>();
-    _click();
-    final outcome = await game.useSecondChance();
-    if (!mounted || outcome != ToolOutcome.notEnoughCoins) return;
-    await _shortage(
-      cost: AppConfig.secondChanceCost,
-      offerFreeHint: false,
-      retry: game.useSecondChance,
-    );
+    if (!mounted) return;
+    if (outcome == ToolOutcome.notEnoughCoins) {
+      await _handleBoosterShortage(
+        boosterName: '50/50',
+        cost: AppConfig.fiftyCost,
+        onGrantFree: game.grantFreeFifty,
+      );
+    }
   }
 
   Future<void> _next() async {
@@ -165,9 +155,13 @@ class _GameplayScreenState extends State<GameplayScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: MangaColors.ink,
+        behavior: SnackBarBehavior.floating,
         content: Text(
           message,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            color: MangaColors.white,
+          ),
         ),
       ),
     );
@@ -178,6 +172,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final game = context.watch<GameController>();
     final profile = context.watch<ProfileController>().profile;
     final question = game.question;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -191,41 +186,64 @@ class _GameplayScreenState extends State<GameplayScreen> {
                 children: [
                   Column(
                     children: [
+                      // Header Navigation Bar
                       Padding(
                         padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
                         child: Row(
                           children: [
                             IconButton(
                               onPressed: _leave,
-                              icon: const Icon(Icons.close, color: MangaColors.ink),
+                              icon: const Icon(
+                                Icons.close,
+                                color: MangaColors.ink,
+                                size: 26,
+                              ),
                             ),
                             Expanded(
                               child: Text(
                                 'ROUND ${game.sessionRound}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.6,
+                                  letterSpacing: 0.8,
+                                  fontSize: 16,
                                 ),
                               ),
                             ),
                             if (profile.streak > 1)
                               Padding(
                                 padding: const EdgeInsets.only(right: 6),
-                                child: Text(
-                                  '🔥${profile.streak}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: MangaColors.pink,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: MangaColors.ink,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '🔥 ${profile.streak}',
+                                    style: const TextStyle(
+                                      color: MangaColors.white,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ),
+                            // Running Elapsed Stopwatch Engine: ⏱️ 00.0s
                             ValueListenableBuilder<Duration>(
                               valueListenable: game.elapsed,
                               builder: (context, duration, _) {
                                 return NeoBox(
                                   color: MangaColors.ink,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                                    horizontal: 10,
+                                    vertical: 5,
                                   ),
                                   offset: const Offset(2, 2),
                                   borderWidth: 2,
@@ -234,17 +252,20 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                     style: const TextStyle(
                                       color: MangaColors.yellow,
                                       fontWeight: FontWeight.w900,
-                                      fontSize: 13,
+                                      fontSize: 14,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 );
                               },
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             CoinChip(coins: profile.coins, compact: true),
                           ],
                         ),
                       ),
+
+                      // Character Header (Boy and Rival with Manga chat bubbles)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: DialogueStrip(
@@ -257,7 +278,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
                           nameplate: profile.equippedNameplate,
                         ),
                       ),
-                      const SizedBox(height: 8),
+
+                      const SizedBox(height: 6),
+
+                      // Central Thought Cloud displaying math puzzle
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -270,9 +294,11 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 ),
                         ),
                       ),
+
+                      // Interactive Grid: 2x2 Large Buttons for answers
                       if (question != null)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
                           child: _OptionGrid(
                             options: question.options,
                             correctIndex: question.correctIndex,
@@ -283,17 +309,20 @@ class _GameplayScreenState extends State<GameplayScreen> {
                             onPick: _submit,
                           ),
                         ),
+
+                      // In-Game Boosters: [💡 Hint] (10 coins) & [⚖️ 50/50] (25 coins)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                         child: Row(
                           children: [
                             Expanded(
                               child: MangaButton(
                                 label: game.hintVisible
-                                    ? 'HINT USED'
+                                    ? 'HINT ACTIVE'
                                     : profile.hintTokens > 0
                                         ? '💡 HINT · x${profile.hintTokens}'
                                         : '💡 HINT · ${AppConfig.hintCost}',
+                                subtitle: 'Opens yellow banner',
                                 color: MangaColors.yellow,
                                 onPressed: game.hintVisible ||
                                         game.phase == RoundPhase.resolved
@@ -301,14 +330,18 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                     : _hint,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: MangaButton(
-                                label: profile.fiftyTokens > 0
-                                    ? '⚖️ 50/50 · x${profile.fiftyTokens}'
-                                    : '⚖️ 50/50 · ${AppConfig.fiftyCost}',
+                                label: game.removed.isNotEmpty
+                                    ? '50/50 USED'
+                                    : profile.fiftyTokens > 0
+                                        ? '⚖️ 50/50 · x${profile.fiftyTokens}'
+                                        : '⚖️ 50/50 · ${AppConfig.fiftyCost}',
+                                subtitle: 'Disables 2 wrongs',
                                 color: MangaColors.blue,
-                                onPressed: game.phase == RoundPhase.resolved
+                                onPressed: game.removed.isNotEmpty ||
+                                        game.phase == RoundPhase.resolved
                                     ? null
                                     : _fifty,
                               ),
@@ -316,24 +349,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                        child: MangaButton(
-                          label: profile.chanceTokens > 0
-                              ? '🛡️ SECOND CHANCE · TOKEN'
-                              : '🛡️ SECOND CHANCE · ${AppConfig.secondChanceCost}',
-                          subtitle: game.phase == RoundPhase.wrongChoice
-                              ? 'Timer is still running'
-                              : 'Arms only after a miss',
-                          color: MangaColors.mint,
-                          onPressed: game.phase == RoundPhase.wrongChoice &&
-                                  !game.secondChanceUsed
-                              ? _chance
-                              : null,
-                        ),
-                      ),
                     ],
                   ),
+
+                  // Solved Comic-Style Popup Badge with exact time and speed reward
                   if (game.phase == RoundPhase.resolved && game.reward != null)
                     Positioned.fill(
                       child: ComicPopup(
@@ -341,40 +360,95 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         onNext: _advancing ? () {} : _next,
                       ),
                     ),
+
+                  // Wrong Answer Comic Card
                   if (game.phase == RoundPhase.resolved && game.failed)
                     Positioned(
-                      left: 12,
-                      right: 12,
-                      bottom: 12,
+                      left: 14,
+                      right: 14,
+                      bottom: 16,
                       child: NeoBox(
                         color: MangaColors.white,
+                        offset: const Offset(6, 6),
+                        borderWidth: 3,
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              'Missed it. Green was the answer.',
-                              style: TextStyle(fontWeight: FontWeight.w900),
+                            Row(
+                              children: [
+                                const Text('❌', style: TextStyle(fontSize: 24)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'MISSED IT!',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 18,
+                                          color: MangaColors.red,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Correct answer was: ${question?.correctOption ?? ""}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             MangaButton(
                               label: _advancing ? 'LOADING...' : 'NEXT CLOUD',
+                              subtitle: 'Shake it off and try again',
                               color: MangaColors.pink,
+                              icon: Icons.refresh,
                               onPressed: _advancing ? null : _next,
                             ),
                           ],
                         ),
                       ),
                     ),
+
+                  // Loading ad overlay
                   if (_adBusy)
                     const Positioned.fill(
                       child: ColoredBox(
-                        color: Color(0x88111111),
+                        color: Color(0x99111111),
                         child: Center(
                           child: NeoBox(
                             color: MangaColors.yellow,
-                            child: Text(
-                              'LOADING AD...',
-                              style: TextStyle(fontWeight: FontWeight.w900),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: MangaColors.ink,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'LOADING REWARDED AD...',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -390,6 +464,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
   }
 }
 
+/// 2x2 Interactive Grid of Answer Buttons.
+/// Turn Green on correct, Red on wrong!
 class _OptionGrid extends StatelessWidget {
   const _OptionGrid({
     required this.options,
@@ -417,26 +493,116 @@ class _OptionGrid extends StatelessWidget {
       itemCount: 4,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        mainAxisExtent: 64,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        mainAxisExtent: 70,
       ),
       itemBuilder: (context, index) {
         final gone = removed.contains(index);
-        final picked = selectedIndex == index;
-        final showCorrect = reveal && index == correctIndex;
+        final isSelected = selectedIndex == index;
+        final isCorrect = index == correctIndex;
+
         Color fill = MangaColors.optionFills[index];
-        if (gone) fill = MangaColors.disabled;
-        if (showCorrect) fill = MangaColors.green;
-        if (picked && !showCorrect && reveal) fill = MangaColors.red;
-        if (picked && !reveal && !enabled) fill = MangaColors.red;
+        Color textColor = MangaColors.ink;
+
+        if (gone) {
+          fill = MangaColors.disabled;
+          textColor = MangaColors.disabledInk;
+        }
+
+        // Color states: Green on correct, Red on wrong!
+        if (reveal) {
+          if (isCorrect) {
+            fill = MangaColors.green;
+            textColor = MangaColors.white;
+          } else if (isSelected) {
+            fill = MangaColors.red;
+            textColor = MangaColors.white;
+          } else {
+            fill = MangaColors.disabled;
+            textColor = MangaColors.disabledInk;
+          }
+        }
+
         final letter = String.fromCharCode(65 + index);
-        return MangaButton(
-          label: gone ? '$letter   —' : '$letter   ${options[index]}',
+        final label = gone ? '$letter  —' : '$letter  ${options[index]}';
+
+        return MangaOptionButton(
+          label: label,
           color: fill,
+          textColor: textColor,
           onPressed: !enabled || gone ? null : () => onPick(index),
         );
       },
+    );
+  }
+}
+
+class MangaOptionButton extends StatefulWidget {
+  const MangaOptionButton({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color color;
+  final Color textColor;
+  final VoidCallback? onPressed;
+
+  @override
+  State<MangaOptionButton> createState() => _MangaOptionButtonState();
+}
+
+class _MangaOptionButtonState extends State<MangaOptionButton> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
+    final shift = _down && enabled ? const Offset(3, 3) : Offset.zero;
+
+    return GestureDetector(
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: enabled
+          ? (_) {
+              setState(() => _down = false);
+              widget.onPressed?.call();
+            }
+          : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 60),
+        transform: Matrix4.translationValues(shift.dx, shift.dy, 0),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: widget.color,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: MangaColors.ink, width: 2.5),
+          boxShadow: [
+            BoxShadow(
+              color: MangaColors.ink,
+              offset: _down && enabled ? Offset.zero : const Offset(4, 4),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Text(
+          widget.label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: widget.textColor,
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
     );
   }
 }

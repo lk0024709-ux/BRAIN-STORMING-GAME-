@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../theme/manga_colors.dart';
 
+/// 2D Neo-Brutalist Manga Avatar for Hero (Boy) and Rival.
+///
+/// When [pro] is true on the user avatar, wraps the character in a radiant
+/// golden neo-brutalism frame with an attached glowing "👑 PRO" badge and crown.
 class MangaAvatar extends StatelessWidget {
   const MangaAvatar({
     super.key,
     required this.rival,
     this.pro = false,
-    this.size = 78,
+    this.size = 76,
   });
 
   final bool rival;
@@ -16,12 +20,105 @@ class MangaAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final isProHero = pro && !rival;
+
+    final avatarWidget = SizedBox(
       width: size,
       height: size * 1.12,
       child: CustomPaint(
-        painter: _AvatarPainter(rival: rival, pro: pro && !rival),
+        painter: _AvatarPainter(rival: rival, pro: isProHero),
       ),
+    );
+
+    if (!isProHero) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: MangaColors.ink, width: 2.5),
+          color: MangaColors.white,
+          boxShadow: const [
+            BoxShadow(
+              color: MangaColors.ink,
+              offset: Offset(3, 3),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(2),
+        child: avatarWidget,
+      );
+    }
+
+    // Glowing Golden Frame with attached 👑 PRO badge
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF9E6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: MangaColors.ink, width: 2.5),
+            boxShadow: const [
+              // Ambient golden glow
+              BoxShadow(
+                color: MangaColors.gold,
+                offset: Offset(0, 0),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+              // Sharp neo-brutalist 0-blur drop shadow
+              BoxShadow(
+                color: MangaColors.ink,
+                offset: Offset(3, 3),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: MangaColors.gold, width: 2.5),
+              color: MangaColors.white,
+            ),
+            padding: const EdgeInsets.all(2),
+            child: avatarWidget,
+          ),
+        ),
+        Positioned(
+          top: -7,
+          right: -7,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: MangaColors.gold,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: MangaColors.ink, width: 2),
+              boxShadow: const [
+                BoxShadow(
+                  color: MangaColors.ink,
+                  offset: Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '👑 PRO',
+                  style: TextStyle(
+                    color: MangaColors.ink,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 8.5,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -45,10 +142,8 @@ class _AvatarPainter extends CustomPainter {
     final fill = Paint()..style = PaintingStyle.fill;
 
     if (pro) {
-      fill.color = MangaColors.gold.withValues(alpha: 0.55);
+      fill.color = MangaColors.gold.withValues(alpha: 0.45);
       canvas.drawCircle(Offset(w * 0.5, h * 0.42), w * 0.48, fill);
-      fill.color = MangaColors.gold;
-      _crown(canvas, w, h, fill, ink);
     }
 
     // Hard shadow under the bust.
@@ -61,7 +156,8 @@ class _AvatarPainter extends CustomPainter {
       fill,
     );
 
-    fill.color = rival ? MangaColors.rival : MangaColors.hero;
+    // Bust body
+    fill.color = rival ? MangaColors.rival : (pro ? const Color(0xFF3370FF) : MangaColors.hero);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(w * 0.12, h * 0.54, w * 0.74, h * 0.40),
@@ -77,7 +173,7 @@ class _AvatarPainter extends CustomPainter {
       ink,
     );
 
-    // Collar.
+    // Collar
     fill.color = MangaColors.white;
     final collar = Path()
       ..moveTo(w * 0.38, h * 0.62)
@@ -87,10 +183,12 @@ class _AvatarPainter extends CustomPainter {
     canvas.drawPath(collar, fill);
     canvas.drawPath(collar, ink);
 
+    // Neck and Head
     fill.color = MangaColors.skin;
     canvas.drawCircle(Offset(w * 0.50, h * 0.40), w * 0.30, fill);
     canvas.drawCircle(Offset(w * 0.50, h * 0.40), w * 0.30, ink);
 
+    // Hair
     fill.color = MangaColors.ink;
     if (rival) {
       _rivalHair(canvas, w, h, fill, ink);
@@ -98,20 +196,18 @@ class _AvatarPainter extends CustomPainter {
       _heroHair(canvas, w, h, fill);
     }
 
+    // Facial features
     _eyes(canvas, w, h, fill, ink, smirk: rival);
+
+    // Blush cheeks
     fill.color = MangaColors.blush;
     canvas.drawCircle(Offset(w * 0.30, h * 0.48), w * 0.045, fill);
     canvas.drawCircle(Offset(w * 0.70, h * 0.48), w * 0.045, fill);
 
+    // Pro Crown
     if (pro) {
-      fill.color = MangaColors.ink;
-      final badge = RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.62, h * 0.78, w * 0.30, h * 0.16),
-        Radius.circular(w * 0.04),
-      );
       fill.color = MangaColors.gold;
-      canvas.drawRRect(badge, fill);
-      canvas.drawRRect(badge, ink);
+      _crown(canvas, w, h, fill, ink);
     }
   }
 
@@ -206,6 +302,11 @@ class _AvatarPainter extends CustomPainter {
       ..close();
     canvas.drawPath(crown, fill);
     canvas.drawPath(crown, ink);
+
+    // Jewel in crown center
+    fill.color = MangaColors.pink;
+    canvas.drawCircle(Offset(w * 0.50, h * 0.14), w * 0.025, fill);
+    canvas.drawCircle(Offset(w * 0.50, h * 0.14), w * 0.025, ink);
   }
 
   @override
