@@ -7,6 +7,7 @@ import '../config/app_config.dart';
 import '../content/legal_copy.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
+import '../models/question.dart';
 import '../services/question_generator.dart';
 import '../theme/cyber_palette.dart';
 import '../theme/manga_theme.dart';
