@@ -12,7 +12,7 @@ flutter test
 flutter run
 ```
 
-Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slider hilaaye bina dojo nahi khulega. Under 13 pe ads SDK start hi nahi hota.
+Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slider hilaaye bina dojo nahi khulega. Under 13 pe ads SDK start hi nahi hota. The app renders a branded startup screen before loading local storage or touching platform services; store availability and product queries wait until the Pro screen is opened.
 
 ## What you get
 
@@ -24,7 +24,7 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slid
 - **Gameplay** is a comic page: hero, rival, thought cloud, 2×2 panels.
   - Hint costs 10 coins and drops a yellow banner inside the cloud.
   - 50/50 costs 25 coins and kills two wrong panels.
-  - Second Chance costs 40 coins after a miss. The stopwatch keeps running.
+  - An affordable first miss offers one Second Chance for 40 coins or a stored chance token. The same stopwatch keeps running; the miss is only recorded if the player moves on or misses again.
   - Short on coins and 13+? Watch an ad for a free hint or +20 coins.
 - **Stopwatch rewards**
   - ≤ 5.0s Lightning Fast — +20 coins, +40 XP
@@ -88,7 +88,7 @@ Create a **non-consumable** in Play Console with product id exactly:
 brainspeed_iq_pro
 ```
 
-The app queries that id, buys with `buyNonConsumable`, listens on `purchaseStream`, checks product id + purchased/restored, then sets `isProUser` and completes the purchase. Restore is on the Pro screen, in Settings, and once silently after launch.
+The app listens for purchase updates after the first frame, then queries that id only when the Pro screen is opened. It buys with `buyNonConsumable`, checks product id + purchased/restored, then sets `isProUser` and completes the purchase. Restore is available on the Pro screen and in Settings; the player can retry it if Play Billing was initially unavailable.
 
 A modified client can flip a local bool. Before real revenue, verify the purchase token on a server. The in-app check is the complete store flow; it is not a fraud backend.
 
@@ -128,4 +128,4 @@ Then set `GADApplicationIdentifier` to your AdMob app id, add Meta's SKAdNetwork
 flutter test
 ```
 
-Covers the generator (four unique choices, kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, and rank forge thresholds.
+Covers the age-gated startup, generator (four unique choices, kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.

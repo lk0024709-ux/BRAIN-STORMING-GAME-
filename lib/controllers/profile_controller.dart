@@ -12,6 +12,7 @@ class ProfileController extends ChangeNotifier {
 
   final StorageService _storage;
   UserProfile profile = UserProfile.fresh();
+  Future<void> _saveTail = Future<void>.value();
 
   int get userAge => profile.userAge;
   int get coins => profile.coins;
@@ -220,8 +221,17 @@ class ProfileController extends ChangeNotifier {
     await _save();
   }
 
-  Future<void> _save() async {
-    await _storage.write(profile);
-    notifyListeners();
+  Future<void> _save() {
+    // Persist immutable snapshots in order so fast successive actions cannot
+    // interleave SharedPreferences writes and leave a mixed profile on disk.
+    final snapshot = profile;
+    final write = _saveTail.then((_) => _storage.write(snapshot));
+    _saveTail = write.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('Profile persistence failed: $error\n$stackTrace');
+      },
+    );
+    return write.then((_) => notifyListeners());
   }
 }

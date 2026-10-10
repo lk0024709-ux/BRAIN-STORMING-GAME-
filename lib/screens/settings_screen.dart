@@ -192,10 +192,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
                 const SizedBox(height: 8),
                 MangaButton(
-                  label: 'RESTORE PURCHASES',
+                  label: iap.purchasePending
+                      ? 'CONTACTING PLAY STORE...'
+                      : 'RESTORE PURCHASES',
                   color: MangaColors.gold,
-                  onPressed: iap.restore,
+                  onPressed: iap.purchasePending ? null : iap.restore,
                 ),
+                if (iap.error != null || iap.statusMessage != null) ...[
+                  const SizedBox(height: 8),
+                  NeoBox(
+                    color: iap.error != null
+                        ? const Color(0xFFFFE8EE)
+                        : MangaColors.paperDeep,
+                    child: Text(
+                      iap.error ?? iap.statusMessage ?? '',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: iap.error != null ? MangaColors.red : MangaColors.ink,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 MangaButton(
                   label: 'RESET TRAINING DATA',

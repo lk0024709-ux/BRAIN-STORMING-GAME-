@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,14 +15,27 @@ import '../widgets/neo_widgets.dart';
 ///
 /// Features characters excitedly presenting perks, glowing golden avatar frame
 /// showcase, clear neo-brutalist benefit breakdown, and a large "Upgrade Now" button.
-class ProUpgradeScreen extends StatelessWidget {
+class ProUpgradeScreen extends StatefulWidget {
   const ProUpgradeScreen({super.key});
 
-  Future<void> _buy(BuildContext context) async {
+  @override
+  State<ProUpgradeScreen> createState() => _ProUpgradeScreenState();
+}
+
+class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(context.read<IAPService>().prepareStore());
+    });
+  }
+
+  Future<void> _buy() async {
     final profile = context.read<ProfileController>();
     if (profile.isChild) {
       final allowed = await showParentalGate(context);
-      if (!allowed || !context.mounted) return;
+      if (!allowed || !mounted) return;
     }
     await context.read<IAPService>().buy();
   }
@@ -341,6 +356,18 @@ class ProUpgradeScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (!pro && iap.storeQueryDone &&
+                    (!iap.available || iap.product == null)) ...[
+                  const SizedBox(height: 8),
+                  MangaButton(
+                    label: 'RECHECK PLAY STORE',
+                    color: MangaColors.white,
+                    icon: Icons.refresh,
+                    onPressed: iap.purchasePending
+                        ? null
+                        : () => iap.prepareStore(force: true),
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -358,7 +385,7 @@ class ProUpgradeScreen extends StatelessWidget {
                           : 'One-time purchase · Instant activation',
                   color: MangaColors.gold,
                   icon: pro ? Icons.check_circle : Icons.workspace_premium,
-                  onPressed: pro || iap.purchasePending ? null : () => _buy(context),
+                  onPressed: pro || iap.purchasePending ? null : _buy,
                 ),
 
                 const SizedBox(height: 10),

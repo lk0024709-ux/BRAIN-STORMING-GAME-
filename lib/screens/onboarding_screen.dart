@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _ageTouched = false;
   bool _accepted = false;
   bool _saving = false;
+  String? _saveError;
 
   @override
   void dispose() {
@@ -47,15 +49,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _enter() async {
     if (!_canEnter) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
     final profile = context.read<ProfileController>();
     final ads = context.read<AdService>();
-    await profile.completeOnboarding(
-      nickname: _name.text.trim(),
-      age: _ageValue,
-    );
-    await ads.configure(age: profile.userAge, isPro: profile.isProUser);
-    if (mounted) setState(() => _saving = false);
+    try {
+      await profile.completeOnboarding(
+        nickname: _name.text.trim(),
+        age: _ageValue,
+      );
+      // Ad consent and SDK initialization are deliberately non-blocking. The
+      // player can enter immediately; AdService records any initialization error.
+      unawaited(ads.configure(age: profile.userAge, isPro: profile.isProUser));
+    } catch (error, stackTrace) {
+      debugPrint('Could not save onboarding: $error\n$stackTrace');
+      if (mounted) {
+        setState(() => _saveError = 'Could not save your profile. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _openLegal(String title, String body) {
@@ -246,6 +261,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
+                if (_saveError != null) ...[
+                  const SizedBox(height: 12),
+                  NeoBox(
+                    color: const Color(0xFFFFE8EE),
+                    child: Text(
+                      _saveError!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: MangaColors.red,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 MangaButton(
                   label: _saving ? 'OPENING...' : 'ENTER THE DOJO',

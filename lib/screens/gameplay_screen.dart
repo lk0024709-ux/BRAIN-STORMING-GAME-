@@ -53,8 +53,14 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   Future<void> _leave() async {
     final game = context.read<GameController>();
-    if (game.phase == RoundPhase.resolved && !_advancing) {
-      Navigator.pop(context);
+    if (game.toolsBusy || _advancing) return;
+    if (game.phase == RoundPhase.resolved) {
+      try {
+        if (game.failed) await game.finalizeMiss();
+        if (mounted) Navigator.pop(context);
+      } catch (_) {
+        if (mounted) _toast('Could not save this round. Try again.');
+      }
       return;
     }
     final leave = await showConfirmDialog(
@@ -145,11 +151,24 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
   }
 
+  Future<void> _secondChance() async {
+    final outcome = await context.read<GameController>().useSecondChance();
+    if (!mounted) return;
+    if (outcome == ToolOutcome.notEnoughCoins) {
+      _toast('Not enough coins for a second chance.');
+    }
+  }
+
   Future<void> _next() async {
     if (_advancing) return;
     setState(() => _advancing = true);
-    await context.read<GameController>().nextRound();
-    if (mounted) setState(() => _advancing = false);
+    try {
+      await context.read<GameController>().nextRound();
+    } catch (_) {
+      if (mounted) _toast('Could not save this round. Try again.');
+    } finally {
+      if (mounted) setState(() => _advancing = false);
+    }
   }
 
   void _toast(String message) {
@@ -326,7 +345,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 subtitle: 'Opens yellow banner',
                                 color: MangaColors.yellow,
                                 onPressed: game.hintVisible ||
-                                        game.phase == RoundPhase.resolved
+                                        game.phase == RoundPhase.resolved ||
+                                        game.toolsBusy
                                     ? null
                                     : _hint,
                               ),
@@ -342,7 +362,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 subtitle: 'Disables 2 wrongs',
                                 color: MangaColors.blue,
                                 onPressed: game.removed.isNotEmpty ||
-                                        game.phase == RoundPhase.resolved
+                                        game.phase == RoundPhase.resolved ||
+                                        game.toolsBusy
                                     ? null
                                     : _fifty,
                               ),
@@ -405,13 +426,27 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 ),
                               ],
                             ),
+                            if (game.hasPendingSecondChance) ...[
+                              const SizedBox(height: 12),
+                              MangaButton(
+                                label: profile.chanceTokens > 0
+                                    ? 'SECOND CHANCE · USE TOKEN'
+                                    : 'SECOND CHANCE · ${AppConfig.secondChanceCost} COINS',
+                                subtitle: 'One retry · stopwatch keeps running',
+                                color: MangaColors.yellow,
+                                icon: Icons.replay,
+                                onPressed: game.toolsBusy || _advancing
+                                    ? null
+                                    : _secondChance,
+                              ),
+                            ],
                             const SizedBox(height: 12),
                             MangaButton(
                               label: _advancing ? 'LOADING...' : 'NEXT CLOUD',
                               subtitle: 'Shake it off and try again',
                               color: MangaColors.pink,
                               icon: Icons.refresh,
-                              onPressed: _advancing ? null : _next,
+                              onPressed: _advancing || game.toolsBusy ? null : _next,
                             ),
                           ],
                         ),
