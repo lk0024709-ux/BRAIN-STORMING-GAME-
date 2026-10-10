@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/manga_colors.dart';
+import '../theme/cyber_palette.dart';
 import '../theme/manga_theme.dart';
-import '../widgets/neo_widgets.dart';
+import '../widgets/cyber_widgets.dart';
 
 class LegalScreen extends StatelessWidget {
   const LegalScreen({
@@ -17,7 +17,8 @@ class LegalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: HalftoneBackground(
+      backgroundColor: CyberPalette.background,
+      body: CyberBackdrop(
         child: SafeArea(
           child: DojoFrame(
             child: Column(
@@ -28,12 +29,16 @@ class LegalScreen extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back, color: MangaColors.ink),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: CyberPalette.text,
+                        ),
                       ),
                       Expanded(
                         child: Text(
                           title,
                           style: const TextStyle(
+                            color: CyberPalette.text,
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
                           ),
@@ -46,11 +51,12 @@ class LegalScreen extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     children: [
-                      NeoBox(
-                        color: MangaColors.white,
+                      CyberPanel(
+                        accent: CyberPalette.blue,
                         child: Text(
                           body.trim(),
                           style: const TextStyle(
+                            color: CyberPalette.text,
                             fontWeight: FontWeight.w600,
                             height: 1.4,
                             fontSize: 14,

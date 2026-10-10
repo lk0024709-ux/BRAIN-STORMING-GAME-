@@ -8,10 +8,11 @@ import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/question.dart';
-import '../services/ad_service.dart';
+import '../theme/cyber_palette.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
 import '../widgets/comic_popup.dart';
+import '../widgets/cyber_widgets.dart';
 import '../widgets/dialogue_strip.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/neo_widgets.dart';
@@ -27,7 +28,6 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> {
   Timer? _ticker;
   bool _advancing = false;
-  bool _adBusy = false;
 
   @override
   void initState() {
@@ -53,14 +53,20 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   Future<void> _leave() async {
     final game = context.read<GameController>();
-    if (game.phase == RoundPhase.resolved && !_advancing) {
-      Navigator.pop(context);
+    if (game.toolsBusy || _advancing) return;
+    if (game.phase == RoundPhase.resolved) {
+      try {
+        if (game.failed) await game.finalizeMiss();
+        if (mounted) Navigator.pop(context);
+      } catch (_) {
+        if (mounted) _toast('Could not save this round. Try again.');
+      }
       return;
     }
     final leave = await showConfirmDialog(
       context: context,
-      title: 'LEAVE THE ROUND?',
-      body: 'The stopwatch stops if you walk out. No reward for a half-solve.',
+      title: 'LEAVE THIS LEVEL?',
+      body: 'The stopwatch stops if you walk out. This level stays open until you solve it.',
       confirmLabel: 'LEAVE',
     );
     if (leave && mounted) Navigator.pop(context);
@@ -82,51 +88,14 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
   }
 
-  /// Rewarded Ad Prompt: "Watch a short ad for a Free Hint + 20 Coins?"
-  Future<void> _handleBoosterShortage({
-    required String boosterName,
-    required int cost,
-    required VoidCallback onGrantFree,
-  }) async {
-    final ads = context.read<AdService>();
-    final profile = context.read<ProfileController>();
-
-    final accepted = await showBoosterShortagePrompt(
-      context: context,
-      boosterLabel: boosterName,
-      cost: cost,
-      balance: profile.coins,
-      canWatchAd: ads.rewardedAllowed,
-    );
-
-    if (!accepted || !mounted) return;
-
-    setState(() => _adBusy = true);
-    final earned = await ads.showRewarded();
-    if (mounted) setState(() => _adBusy = false);
-    if (!mounted) return;
-
-    if (!earned) {
-      _toast('Ad not completed. No reward granted.');
-      return;
-    }
-
-    // Reward Callback: Grant Free Booster + 20 Coins!
-    await profile.addCoins(AppConfig.rewardedCoinPayout);
-    onGrantFree();
-    _toast('+${AppConfig.rewardedCoinPayout} Coins & Free $boosterName granted!');
-  }
-
   Future<void> _hint() async {
     final game = context.read<GameController>();
     _click();
     final outcome = await game.useHint();
     if (!mounted) return;
     if (outcome == ToolOutcome.notEnoughCoins) {
-      await _handleBoosterShortage(
-        boosterName: 'Hint',
-        cost: AppConfig.hintCost,
-        onGrantFree: game.grantFreeHint,
+      _toast(
+        'Not enough coins for a hint. Solve rounds to earn coins or pick up a hint pack in the Shop.',
       );
     }
   }
@@ -137,19 +106,30 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final outcome = await game.useFifty();
     if (!mounted) return;
     if (outcome == ToolOutcome.notEnoughCoins) {
-      await _handleBoosterShortage(
-        boosterName: '50/50',
-        cost: AppConfig.fiftyCost,
-        onGrantFree: game.grantFreeFifty,
+      _toast(
+        'Not enough coins for 50/50. Solve rounds to earn coins or pick up a token pack in the Shop.',
       );
+    }
+  }
+
+  Future<void> _secondChance() async {
+    final outcome = await context.read<GameController>().useSecondChance();
+    if (!mounted) return;
+    if (outcome == ToolOutcome.notEnoughCoins) {
+      _toast('Not enough coins for a second chance.');
     }
   }
 
   Future<void> _next() async {
     if (_advancing) return;
     setState(() => _advancing = true);
-    await context.read<GameController>().nextRound();
-    if (mounted) setState(() => _advancing = false);
+    try {
+      await context.read<GameController>().nextRound();
+    } catch (_) {
+      if (mounted) _toast('Could not save this round. Try again.');
+    } finally {
+      if (mounted) setState(() => _advancing = false);
+    }
   }
 
   void _toast(String message) {
@@ -180,7 +160,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
         if (!didPop) _leave();
       },
       child: Scaffold(
-        body: HalftoneBackground(
+        backgroundColor: CyberPalette.background,
+        body: CyberBackdrop(
           child: SafeArea(
             child: DojoFrame(
               child: Stack(
@@ -196,18 +177,35 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               onPressed: _leave,
                               icon: const Icon(
                                 Icons.close,
-                                color: MangaColors.ink,
+                                color: CyberPalette.text,
                                 size: 26,
                               ),
                             ),
                             Expanded(
-                              child: Text(
-                                'ROUND ${game.sessionRound}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                  fontSize: 16,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    game.levelInfo.levelLabel,
+                                    style: const TextStyle(
+                                      color: CyberPalette.text,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${game.levelInfo.title} · CHAPTER ${game.levelInfo.chapter}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: CyberPalette.muted,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             if (profile.streak > 1)
@@ -326,7 +324,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 subtitle: 'Opens yellow banner',
                                 color: MangaColors.yellow,
                                 onPressed: game.hintVisible ||
-                                        game.phase == RoundPhase.resolved
+                                        game.phase == RoundPhase.resolved ||
+                                        game.toolsBusy
                                     ? null
                                     : _hint,
                               ),
@@ -342,7 +341,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 subtitle: 'Disables 2 wrongs',
                                 color: MangaColors.blue,
                                 onPressed: game.removed.isNotEmpty ||
-                                        game.phase == RoundPhase.resolved
+                                        game.phase == RoundPhase.resolved ||
+                                        game.toolsBusy
                                     ? null
                                     : _fifty,
                               ),
@@ -358,6 +358,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                     Positioned.fill(
                       child: ComicPopup(
                         reward: game.reward!,
+                        levelNumber: game.levelNumber,
                         onNext: _advancing ? () {} : _next,
                       ),
                     ),
@@ -405,56 +406,33 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                 ),
                               ],
                             ),
+                            if (game.hasPendingSecondChance) ...[
+                              const SizedBox(height: 12),
+                              MangaButton(
+                                label: profile.chanceTokens > 0
+                                    ? 'SECOND CHANCE · USE TOKEN'
+                                    : 'SECOND CHANCE · ${AppConfig.secondChanceCost} COINS',
+                                subtitle: 'One retry · stopwatch keeps running',
+                                color: MangaColors.yellow,
+                                icon: Icons.replay,
+                                onPressed: game.toolsBusy || _advancing
+                                    ? null
+                                    : _secondChance,
+                              ),
+                            ],
                             const SizedBox(height: 12),
                             MangaButton(
-                              label: _advancing ? 'LOADING...' : 'NEXT CLOUD',
-                              subtitle: 'Shake it off and try again',
+                              label: _advancing ? 'LOADING...' : 'RETRY LEVEL',
+                              subtitle: 'Solve this level to unlock the next',
                               color: MangaColors.pink,
                               icon: Icons.refresh,
-                              onPressed: _advancing ? null : _next,
+                              onPressed: _advancing || game.toolsBusy ? null : _next,
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                  // Loading ad overlay
-                  if (_adBusy)
-                    const Positioned.fill(
-                      child: ColoredBox(
-                        color: Color(0x99111111),
-                        child: Center(
-                          child: NeoBox(
-                            color: MangaColors.yellow,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: MangaColors.ink,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'LOADING REWARDED AD...',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

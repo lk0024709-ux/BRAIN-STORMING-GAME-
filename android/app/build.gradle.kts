@@ -12,11 +12,6 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
-// Test App ID so `flutter run` works before a real AdMob app exists.
-// Release builds should pass -PADMOB_APP_ID=ca-app-pub-xxxxxxxx~yyyyyyyy.
-val admobAppId = (project.findProperty("ADMOB_APP_ID") as String?)
-    ?: "ca-app-pub-3940256099942544~3347511713"
-
 android {
     namespace = "com.brainspeed.iq"
     compileSdk = flutter.compileSdkVersion
@@ -33,7 +28,6 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     signingConfigs {

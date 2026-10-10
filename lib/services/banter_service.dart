@@ -26,9 +26,9 @@ class BanterService {
   final Random _random;
 
   BanterPair line(BanterEvent event, int age) {
-    final pool = age < 10
+    final pool = age < 13
         ? _kids
-        : age < 17
+        : age < 18
             ? _teens
             : _adults;
     final lines = pool[event] ?? pool[BanterEvent.intro]!;

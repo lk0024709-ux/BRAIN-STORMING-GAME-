@@ -1,8 +1,8 @@
 enum AgeBand { kids, teens, adults }
 
 AgeBand ageBandFor(int age) {
-  if (age < 10) return AgeBand.kids;
-  if (age < 17) return AgeBand.teens;
+  if (age < 13) return AgeBand.kids;
+  if (age < 18) return AgeBand.teens;
   return AgeBand.adults;
 }
 

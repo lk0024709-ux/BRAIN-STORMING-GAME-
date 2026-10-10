@@ -1,49 +1,30 @@
 # BrainSpeed IQ Privacy Policy
 
-Last updated: 9 October 2026
+Last updated: 10 October 2026
 
-BrainSpeed IQ is an educational brain-training game. This policy explains what stays on the device and when advertising software is allowed to run. The same text is shown inside the app.
+BrainSpeed IQ is an educational brain-training game. Your profile and training progress are stored on your device. The app does not include advertising, ad tracking, or analytics services. The same policy is shown inside the app.
 
 ## 1. What we store
 
-Progress is stored only on the device, using local storage (SharedPreferences). That includes nickname, age, coin balance, total XP, rank, sound preference, cosmetics, and whether Pro is unlocked. There is no account and no developer-run user server.
+The app stores your nickname, age, coin balance, total XP, rank, sound preference, cosmetics, and Pro status in local storage (SharedPreferences). We do not create an account or operate a user-data server.
 
-## 2. Age and COPPA
+## 2. Age and children
 
-An age must be set before play. If the saved age is under 13:
+You set an age before play. Age is used to choose an appropriate question difficulty and starting coin balance. If the saved age is under 13, a parent check is required before opening a purchase flow. Age is not used for advertising; the app does not show ads.
 
-- The advertising SDK is not initialized.
-- Banner, interstitial, and rewarded ads are not requested.
-- Meta Audience Network is not contacted.
-- The advertising ID is not used for that player.
+## 3. Advertising and tracking
 
-Question difficulty still adapts. Tracking does not start. If a player changes age from 13+ to under 13 during a session where ads already started, ads stop immediately and a restart finishes child-safe mode.
-
-Players aged 13 to 17 are treated as teens for ad requests: non-personalized ads and a tighter content rating. Players 18+ may receive ads allowed by their consent choice.
-
-## 3. Ads
-
-For eligible players, the app uses Google AdMob. Meta Audience Network can fill those requests through AdMob mediation.
-
-- Interstitial, after every 3 correctly completed rounds, unless Pro is active.
-- Rewarded, only if the player taps a watch-ad button.
-- Banner, on the Rank and Shop screens, unless Pro is active.
-
-Pro turns banner and interstitial ads off immediately. Google and Meta process ad requests under their own policies. In regions that require a consent form, the app shows Google's User Messaging Platform form before requesting ads.
+BrainSpeed IQ does not display banner, interstitial, or rewarded ads. It does not include AdMob, Meta Audience Network, an advertising identifier, ad mediation, or an advertising-consent SDK. The app does not use third-party analytics or ad tracking.
 
 ## 4. Purchases
 
-Pro is a non-consumable sold by Google Play, product id `brainspeed_iq_pro`. Google processes payment. The app stores an `isProUser` flag locally after the store reports a purchased or restored transaction. Card numbers are not received by the app.
+Pro is a non-consumable in-app product sold by Google Play, product id `brainspeed_iq_pro`. Google Play handles payment and account details. The app receives purchase status from Google Play Billing and stores the Pro-unlocked flag locally. We do not receive your full card number.
 
-## 5. Children and purchases
+## 5. Your choices
 
-If the saved age is under 13, a parent gate (a simple math check) is required before the purchase sheet opens.
+You can reset training data in Settings and review this policy and the Terms in the app. Uninstalling the app removes its local data, subject to your device's backup settings.
 
-## 6. Choices
-
-Training data can be reset in Settings. This policy and the Terms are available in the app. Where the consent form requires it, Settings shows a privacy-options button. Uninstalling the app deletes local progress from the device.
-
-## 7. Contact
+## 6. Contact
 
 support@brainspeed.iq
 

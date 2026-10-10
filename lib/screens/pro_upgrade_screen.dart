@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,16 +15,51 @@ import '../widgets/neo_widgets.dart';
 ///
 /// Features characters excitedly presenting perks, glowing golden avatar frame
 /// showcase, clear neo-brutalist benefit breakdown, and a large "Upgrade Now" button.
-class ProUpgradeScreen extends StatelessWidget {
+class ProUpgradeScreen extends StatefulWidget {
   const ProUpgradeScreen({super.key});
 
-  Future<void> _buy(BuildContext context) async {
+  @override
+  State<ProUpgradeScreen> createState() => _ProUpgradeScreenState();
+}
+
+class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_prepareStore());
+    });
+  }
+
+  Future<void> _startPurchaseUpdates() {
+    final profile = context.read<ProfileController>();
+    return context.read<IAPService>().start(grantPro: profile.unlockPro);
+  }
+
+  Future<void> _prepareStore() async {
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted || !iap.started) return;
+    await iap.prepareStore();
+  }
+
+  Future<void> _restore() async {
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted) return;
+    await iap.restore();
+  }
+
+  Future<void> _buy() async {
     final profile = context.read<ProfileController>();
     if (profile.isChild) {
       final allowed = await showParentalGate(context);
-      if (!allowed || !context.mounted) return;
+      if (!allowed || !mounted) return;
     }
-    await context.read<IAPService>().buy();
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted) return;
+    await iap.buy();
   }
 
   @override
@@ -179,7 +216,7 @@ class ProUpgradeScreen extends StatelessWidget {
                                 Text('⚡ ', style: TextStyle(fontSize: 14)),
                                 Expanded(
                                   child: Text(
-                                    'HERO: "2× XP on every solve and zero ad popups! Let\'s forge Diamond rank!"',
+                                    'HERO: "2× XP on every solve, plus a golden nameplate! Let\'s forge Diamond rank!"',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 12,
@@ -219,14 +256,6 @@ class ProUpgradeScreen extends StatelessWidget {
                 const SectionTitle('PRO PERKS & PRIVILEGES'),
                 const SizedBox(height: 10),
 
-                const _PerkCard(
-                  icon: '🚫',
-                  title: '100% AD-FREE FOREVER',
-                  badge: 'PURE FOCUS',
-                  badgeColor: MangaColors.pink,
-                  body:
-                      'Banner and Interstitial ads are completely removed immediately. Zero interruptions while solving so you stay in the flow zone.',
-                ),
                 const _PerkCard(
                   icon: '⚡',
                   title: '2× SPEED XP BOOST',
@@ -341,6 +370,18 @@ class ProUpgradeScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (!pro && iap.storeQueryDone &&
+                    (!iap.available || iap.product == null)) ...[
+                  const SizedBox(height: 8),
+                  MangaButton(
+                    label: 'RECHECK PLAY STORE',
+                    color: MangaColors.white,
+                    icon: Icons.refresh,
+                    onPressed: iap.purchasePending
+                        ? null
+                        : () => iap.prepareStore(force: true),
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -358,7 +399,7 @@ class ProUpgradeScreen extends StatelessWidget {
                           : 'One-time purchase · Instant activation',
                   color: MangaColors.gold,
                   icon: pro ? Icons.check_circle : Icons.workspace_premium,
-                  onPressed: pro || iap.purchasePending ? null : () => _buy(context),
+                  onPressed: pro || iap.purchasePending ? null : _buy,
                 ),
 
                 const SizedBox(height: 10),
@@ -369,7 +410,7 @@ class ProUpgradeScreen extends StatelessWidget {
                   subtitle: 'Already bought Pro on another device?',
                   color: MangaColors.white,
                   icon: Icons.restore,
-                  onPressed: iap.purchasePending ? null : () => iap.restore(),
+                  onPressed: iap.purchasePending ? null : _restore,
                 ),
 
                 const SizedBox(height: 16),
