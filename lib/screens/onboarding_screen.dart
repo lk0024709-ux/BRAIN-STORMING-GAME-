@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,7 +7,6 @@ import '../config/app_config.dart';
 import '../content/legal_copy.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
-import '../services/ad_service.dart';
 import '../services/question_generator.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -54,15 +52,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _saveError = null;
     });
     final profile = context.read<ProfileController>();
-    final ads = context.read<AdService>();
     try {
+      // Save the age gate before any optional ad or billing SDK is initialized.
       await profile.completeOnboarding(
         nickname: _name.text.trim(),
         age: _ageValue,
       );
-      // Ad consent and SDK initialization are deliberately non-blocking. The
-      // player can enter immediately; AdService records any initialization error.
-      unawaited(ads.configure(age: profile.userAge, isPro: profile.isProUser));
     } catch (error, stackTrace) {
       debugPrint('Could not save onboarding: $error\n$stackTrace');
       if (mounted) {

@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final BanterService _banter = BanterService();
   BanterPair? _pair;
   Timer? _timer;
+  bool _adsRequested = false;
 
   @override
   void didChangeDependencies() {
@@ -66,6 +67,21 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const GameplayScreen(),
         ),
       ),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _prepareAdsAfterInteraction();
+    });
+  }
+
+  void _prepareAdsAfterInteraction() {
+    if (_adsRequested) return;
+    _adsRequested = true;
+    final profile = context.read<ProfileController>();
+    unawaited(
+      context.read<AdService>().configure(
+            age: profile.userAge,
+            isPro: profile.isProUser,
+          ),
     );
   }
 
@@ -110,10 +126,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 14),
                 NeoBox(
                   color: MangaColors.white,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(builder: (_) => const RankScreen()),
-                  ),
+                  onTap: () {
+                    _prepareAdsAfterInteraction();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RankScreen(),
+                      ),
+                    );
+                  },
                   child: Row(
                     children: [
                       RankBadge(tier: data.forgedTier, size: 72),
@@ -164,12 +185,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: MangaButton(
                         label: 'RANK',
                         color: MangaColors.rankFill(data.forgedTier),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => const RankScreen(),
-                          ),
-                        ),
+                        onPressed: () {
+                          _prepareAdsAfterInteraction();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const RankScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -177,12 +201,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: MangaButton(
                         label: 'SHOP',
                         color: MangaColors.yellow,
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => const ShopScreen(),
-                          ),
-                        ),
+                        onPressed: () {
+                          _prepareAdsAfterInteraction();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ShopScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

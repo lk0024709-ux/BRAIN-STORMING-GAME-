@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +13,7 @@ import 'theme/manga_theme.dart';
 import 'widgets/neo_widgets.dart';
 
 /// Starts the Flutter UI immediately, then loads persisted profile data.
-/// Store queries are intentionally deferred until the player opens the Pro page.
+/// Optional Ads and Billing SDKs are initialized only from explicit user flows.
 class BrainSpeedApp extends StatefulWidget {
   const BrainSpeedApp({super.key});
 
@@ -73,7 +71,7 @@ class _BrainSpeedAppState extends State<BrainSpeedApp> {
               ChangeNotifierProvider<AdService>.value(value: services.ads),
               ChangeNotifierProvider<IAPService>.value(value: services.iap),
             ],
-            child: _RootGate(services: services),
+            child: const _RootGate(),
           );
         },
       ),
@@ -93,36 +91,8 @@ class _AppServices {
   final IAPService iap;
 }
 
-class _RootGate extends StatefulWidget {
-  const _RootGate({required this.services});
-
-  final _AppServices services;
-
-  @override
-  State<_RootGate> createState() => _RootGateState();
-}
-
-class _RootGateState extends State<_RootGate> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final profile = widget.services.profile;
-      final ads = widget.services.ads;
-      unawaited(
-        widget.services.iap.start(
-          grantPro: () async {
-            await profile.unlockPro();
-            ads.onProUnlocked();
-          },
-        ),
-      );
-      if (profile.onboardingComplete) {
-        unawaited(ads.configure(age: profile.userAge, isPro: profile.isProUser));
-      }
-    });
-  }
+class _RootGate extends StatelessWidget {
+  const _RootGate();
 
   @override
   Widget build(BuildContext context) {

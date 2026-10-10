@@ -56,6 +56,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _restorePurchases() async {
+    final profile = context.read<ProfileController>();
+    final ads = context.read<AdService>();
+    final iap = context.read<IAPService>();
+    await iap.start(
+      grantPro: () async {
+        await profile.unlockPro();
+        ads.onProUnlocked();
+      },
+    );
+    if (!mounted) return;
+    await iap.restore();
+  }
+
   Future<void> _reset() async {
     final ok = await showConfirmDialog(
       context: context,
@@ -196,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? 'CONTACTING PLAY STORE...'
                       : 'RESTORE PURCHASES',
                   color: MangaColors.gold,
-                  onPressed: iap.purchasePending ? null : iap.restore,
+                  onPressed: iap.purchasePending ? null : _restorePurchases,
                 ),
                 if (iap.error != null || iap.statusMessage != null) ...[
                   const SizedBox(height: 8),

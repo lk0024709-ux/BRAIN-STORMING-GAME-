@@ -25,10 +25,11 @@ class IAPService extends ChangeNotifier {
   IAPService({
     InAppPurchase? iap,
     PurchaseVerifier verifier = const PurchaseVerifier(),
-  })  : _iap = iap ?? InAppPurchase.instance,
+  })  : _injectedIap = iap,
         _verifier = verifier;
 
-  final InAppPurchase _iap;
+  final InAppPurchase? _injectedIap;
+  late final InAppPurchase _iap = _injectedIap ?? InAppPurchase.instance;
   final PurchaseVerifier _verifier;
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -58,9 +59,9 @@ class IAPService extends ChangeNotifier {
 
   String get productTitle => product?.title ?? 'BrainSpeed IQ Pro';
 
-  /// Starts only the purchase-update listener. Availability and product-detail
-  /// queries are deferred until the player opens the Pro screen, keeping store
-  /// IPC out of the critical first-frame startup path.
+  /// Starts the purchase-update listener on demand (Pro or Restore flow).
+  /// Availability and product-detail queries remain deferred until the Pro page,
+  /// keeping store IPC out of app launch.
   Future<void> start({required Future<void> Function() grantPro}) {
     _grantPro = grantPro;
     if (started) return Future<void>.value();

@@ -12,7 +12,7 @@ flutter test
 flutter run
 ```
 
-Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slider hilaaye bina dojo nahi khulega. Under 13 pe ads SDK start hi nahi hota. The app renders a branded startup screen before loading local storage or touching platform services; store availability and product queries wait until the Pro screen is opened.
+Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slider hilaaye bina dojo nahi khulega. Under 13 pe ads SDK start hi nahi hota. The app renders a branded startup screen before loading local storage. Ads/Billing platform services are kept out of app launch: ads configure after the player opens an ad-enabled feature, and Billing starts only on the Pro screen or an explicit restore action.
 
 ## What you get
 
@@ -88,7 +88,7 @@ Create a **non-consumable** in Play Console with product id exactly:
 brainspeed_iq_pro
 ```
 
-The app listens for purchase updates after the first frame, then queries that id only when the Pro screen is opened. It buys with `buyNonConsumable`, checks product id + purchased/restored, then sets `isProUser` and completes the purchase. Restore is available on the Pro screen and in Settings; the player can retry it if Play Billing was initially unavailable.
+The app starts the purchase-update listener only when the Pro screen is opened or the player explicitly chooses Restore, then queries the product only on the Pro screen. It buys with `buyNonConsumable`, checks product id + purchased/restored, then sets `isProUser` and completes the purchase. Restore is available on the Pro screen and in Settings; the player can retry it if Play Billing was initially unavailable.
 
 A modified client can flip a local bool. Before real revenue, verify the purchase token on a server. The in-app check is the complete store flow; it is not a fraud backend.
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/profile_controller.dart';
+import '../services/ad_service.dart';
 import '../services/iap_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -27,8 +28,33 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(context.read<IAPService>().prepareStore());
+      if (mounted) unawaited(_prepareStore());
     });
+  }
+
+  Future<void> _startPurchaseUpdates() {
+    final profile = context.read<ProfileController>();
+    final ads = context.read<AdService>();
+    return context.read<IAPService>().start(
+      grantPro: () async {
+        await profile.unlockPro();
+        ads.onProUnlocked();
+      },
+    );
+  }
+
+  Future<void> _prepareStore() async {
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted || !iap.started) return;
+    await iap.prepareStore();
+  }
+
+  Future<void> _restore() async {
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted) return;
+    await iap.restore();
   }
 
   Future<void> _buy() async {
@@ -37,7 +63,10 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
       final allowed = await showParentalGate(context);
       if (!allowed || !mounted) return;
     }
-    await context.read<IAPService>().buy();
+    final iap = context.read<IAPService>();
+    await _startPurchaseUpdates();
+    if (!mounted) return;
+    await iap.buy();
   }
 
   @override
@@ -396,7 +425,7 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
                   subtitle: 'Already bought Pro on another device?',
                   color: MangaColors.white,
                   icon: Icons.restore,
-                  onPressed: iap.purchasePending ? null : () => iap.restore(),
+                  onPressed: iap.purchasePending ? null : _restore,
                 ),
 
                 const SizedBox(height: 16),
