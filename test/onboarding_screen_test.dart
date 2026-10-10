@@ -21,6 +21,8 @@ void main() {
     expect(find.text('ENTER THE DOJO'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
+    await tester.ensureVisible(find.text('KID'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('KID'));
     await tester.pumpAndSettle();
     expect(find.text('KIDS TRACK · Addition and subtraction'), findsOneWidget);
