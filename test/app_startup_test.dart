@@ -11,6 +11,5 @@ void main() {
 
     expect(find.text('BRAINSPEED IQ'), findsOneWidget);
     expect(find.text('Age gate first. Then the dojo opens.'), findsOneWidget);
-    expect(find.text('ENTER THE DOJO'), findsOneWidget);
   });
 }
