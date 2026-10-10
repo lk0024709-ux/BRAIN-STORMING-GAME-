@@ -97,43 +97,18 @@ jobs:
           flutter test --machine > "${RUNNER_TEMP}/flutter-tests.jsonl" 2>&1
           test_status=$?
 
-          python3 - "${RUNNER_TEMP}/flutter-tests.jsonl" "${test_status}" <<'PY'
-          import json
+          if [[ "${test_status}" -ne 0 ]]; then
+            python3 - "${RUNNER_TEMP}/flutter-tests.jsonl" <<'PY'
           import sys
 
-          test_status = int(sys.argv[2])
-          tests = {}
-          failures = []
           with open(sys.argv[1], encoding="utf-8") as results:
-              for line in results:
-                  try:
-                      event = json.loads(line)
-                  except json.JSONDecodeError:
-                      continue
-                  if "test" in event:
-                      test = event["test"]
-                      tests[test["id"]] = test.get("name", "unknown test")
-                  if "error" in event:
-                      failures.append(event["error"])
-
-          for failure in failures:
-              name = tests.get(failure.get("testID"), "Flutter test failure")
-              detail = failure.get("error", "")
-              stack = failure.get("stackTrace", "")
-              message = f"{name}: {detail}\n{stack}"
-              message = (message.replace("%", "%25")
-                                .replace("\r", "%0D")
-                                .replace("\n", "%0A"))
-              print(f"::error title={name}::{message}")
-
-          if test_status != 0:
-              with open(sys.argv[1], encoding="utf-8") as results:
-                  detail = results.read()[-30000:]
-              detail = (detail.replace("%", "%25")
-                              .replace("\r", "%0D")
-                              .replace("\n", "%0A"))
-              print(f"::error title=Flutter test machine output::{detail}")
+              detail = results.read()[-8000:]
+          detail = (detail.replace("%", "%25")
+                            .replace("\r", "%0D")
+                            .replace("\n", "%0A"))
+          print(f"::error file=.github/workflows/build_apk.yml,line=1,title=FlutterTestFailure::{detail}")
           PY
+          fi
 
           cat "${RUNNER_TEMP}/flutter-tests.jsonl"
           exit "${test_status}"
