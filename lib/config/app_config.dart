@@ -30,7 +30,7 @@ class AppConfig {
   static const String battleMusicAsset = 'audio/battle_loop.ogg';
 
   /// Kept low so quiz text and answer feedback stay the focus.
-  static const double battleMusicVolume = 0.35;
+  static const double battleMusicVolume = 0.5;
 }
 
 /// Players under 13 use the child profile and parent-gated purchase flow.

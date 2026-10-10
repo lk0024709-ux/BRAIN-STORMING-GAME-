@@ -91,51 +91,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Run Tests
-        shell: bash
-        run: |
-          set +e
-          flutter test --machine > "${RUNNER_TEMP}/flutter-tests.jsonl" 2>&1
-          test_status=$?
-
-          if [[ "${test_status}" -ne 0 ]]; then
-            python3 - "${RUNNER_TEMP}/flutter-tests.jsonl" <<'PY'
-          import json
-          import sys
-
-          tests = {}
-          failures = set()
-          messages = {}
-          with open(sys.argv[1], encoding="utf-8") as results:
-              for line in results:
-                  try:
-                      event = json.loads(line)
-                  except json.JSONDecodeError:
-                      continue
-                  if not isinstance(event, dict):
-                      continue
-                  test = event.get("test")
-                  if isinstance(test, dict):
-                      tests[test.get("id")] = test.get("name", "unknown test")
-                  test_id = event.get("testID")
-                  if event.get("type") == "testDone" and event.get("result") != "success":
-                      failures.add(test_id)
-                  if test_id is not None and event.get("message"):
-                      messages.setdefault(test_id, []).append(event["message"])
-
-          for test_id in failures:
-              name = tests.get(test_id, f"Flutter test {test_id}")
-              detail = "\n".join(messages.get(test_id, []))
-              for offset in range(0, max(1, len(detail)), 2500):
-                  chunk = detail[offset:offset + 2500]
-                  chunk = (chunk.replace("%", "%25")
-                                .replace("\r", "%0D")
-                                .replace("\n", "%0A"))
-                  print(f"::error file=.github/workflows/build_apk.yml,line=1,title={name}::{chunk}")
-          PY
-          fi
-
-          cat "${RUNNER_TEMP}/flutter-tests.jsonl" | tail -c 3000
-          exit "${test_status}"
+        run: flutter test
 
       # Conditionally skip the heavy APK build on PRs to save CI minutes
       - name: Build Release APK
