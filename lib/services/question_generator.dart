@@ -125,7 +125,6 @@ class QuestionGenerator {
         );
       case 2:
         final b = 2 + _random.nextInt(8);
-        final c = 2 + _random.nextInt(8);
         final a = 2 + _random.nextInt(9);
         final product = a * b;
         final sub = 1 + _random.nextInt(product - 1);

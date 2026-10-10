@@ -29,8 +29,7 @@ class _BannerAdSlotState extends State<BannerAdSlot> {
     if (_loading || _ad != null || !ads.forcedAdsAllowed) return;
     _loading = true;
     _failed = false;
-    final adaptive =
-        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+    final adaptive = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(
       width.truncate(),
     );
     if (!mounted || !ads.forcedAdsAllowed) {

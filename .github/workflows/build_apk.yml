@@ -12,6 +12,18 @@ on:
       - main
       - master
 
+# A newer push to the same branch supersedes the run that is still going.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned so every run resolves the same toolchain. Bump these deliberately.
+  FLUTTER_VERSION: '3.47.6'
+  JAVA_VERSION: '17'
+  ANDROID_COMPILE_SDK: '36'
+  ANDROID_BUILD_TOOLS: '36.0.0'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,26 +31,58 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
+          # Caches ~/.gradle/caches (keyed on the *.gradle.kts files) and the
+          # Gradle wrapper distribution separately (keyed on
+          # gradle-wrapper.properties). That is the whole cost of the release
+          # build: the APK step spends most of its time on downloads.
+          cache: 'gradle'
 
-      # The streamlined SDK setup that prevents the tools installation crash
+      # The hosted Ubuntu images already ship a full Android SDK (cmdline-tools,
+      # platforms;android-36, build-tools;36.0.0, platform-tools), so instead of
+      # downloading a second copy of the command line tools we accept the licences
+      # and assert the packages this project compiles against are present. AGP can
+      # then fetch anything else it needs on its own.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-36
-            build-tools;36.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$(find "$sdk_root/cmdline-tools" -type f -name sdkmanager -path '*/bin/*' 2>/dev/null | sort -V | tail -n 1)"
+          if [[ -z "${sdkmanager}" ]]; then
+            echo "::error::No sdkmanager found under ${sdk_root}/cmdline-tools"
+            exit 1
+          fi
+          echo "Using sdkmanager: ${sdkmanager}"
+
+          # `yes` dies of SIGPIPE once sdkmanager stops reading, so its status is
+          # ignored on purpose. The install below is the real licence gate: it
+          # fails hard if anything is still unaccepted.
+          yes | "${sdkmanager}" --licenses > /dev/null || true
+          "${sdkmanager}" "platform-tools" "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${ANDROID_BUILD_TOOLS}"
+
+          {
+            echo "ANDROID_HOME=${sdk_root}"
+            echo "ANDROID_SDK_ROOT=${sdk_root}"
+          } >> "${GITHUB_ENV}"
+          {
+            echo "$(dirname "${sdkmanager}")"
+            echo "${sdk_root}/platform-tools"
+          } >> "${GITHUB_PATH}"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
       - name: Install Dependencies
         run: flutter pub get
@@ -56,10 +100,9 @@ jobs:
 
       - name: Upload APK Artifact
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: brainspeed-iq-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
           if-no-files-found: error
-          
