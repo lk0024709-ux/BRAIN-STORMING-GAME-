@@ -18,7 +18,6 @@ void main() {
     expect(find.text('BRAINSPEED IQ'), findsOneWidget);
     expect(find.text('NICKNAME'), findsOneWidget);
     expect(find.text('AGE GATE · VERIFY TO ENTER THE DOJO'), findsOneWidget);
-    expect(find.text('ENTER THE DOJO'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.ensureVisible(find.text('KID'));
@@ -26,6 +25,13 @@ void main() {
     await tester.tap(find.text('KID'));
     await tester.pumpAndSettle();
     expect(find.text('KIDS TRACK · Addition and subtraction'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('UNDER 13 · PARENT CHECK BEFORE PURCHASES · NO ADS'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('ENTER THE DOJO'), findsOneWidget);
     expect(
       find.text('UNDER 13 · PARENT CHECK BEFORE PURCHASES · NO ADS'),
       findsOneWidget,
