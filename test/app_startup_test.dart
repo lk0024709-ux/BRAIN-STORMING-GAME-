@@ -15,7 +15,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('BRAINSPEED IQ'), findsOneWidget);
-    expect(find.text('Age gate first. Then the dojo opens.'), findsOneWidget);
+    expect(find.text('AGE GATE · VERIFY TO ENTER THE DOJO'), findsOneWidget);
     expect(find.byType(OnboardingScreen), findsOneWidget);
   });
 

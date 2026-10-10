@@ -140,27 +140,30 @@ class CyberPrimaryButton extends StatelessWidget {
 
   final String label;
   final String subtitle;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null;
     final radius = BorderRadius.circular(28);
     return Container(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: CyberPalette.blue.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(-5, 4),
-          ),
-          BoxShadow(
-            color: CyberPalette.pink.withValues(alpha: 0.26),
-            blurRadius: 20,
-            offset: const Offset(5, 4),
-          ),
-        ],
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: CyberPalette.blue.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(-5, 4),
+                ),
+                BoxShadow(
+                  color: CyberPalette.pink.withValues(alpha: 0.26),
+                  blurRadius: 20,
+                  offset: const Offset(5, 4),
+                ),
+              ]
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -170,20 +173,35 @@ class CyberPrimaryButton extends StatelessWidget {
           borderRadius: radius,
           child: Ink(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [CyberPalette.blue, CyberPalette.purple, CyberPalette.pink],
+                colors: enabled
+                    ? const [
+                        CyberPalette.blue,
+                        CyberPalette.purple,
+                        CyberPalette.pink,
+                      ]
+                    : const [Color(0xFF364158), Color(0xFF3A3148)],
               ),
               borderRadius: radius,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.66), width: 1.4),
+              border: Border.all(
+                color: enabled
+                    ? Colors.white.withValues(alpha: 0.66)
+                    : CyberPalette.edge,
+                width: 1.4,
+              ),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 30, color: CyberPalette.text),
+                  Icon(
+                    icon,
+                    size: 30,
+                    color: enabled ? CyberPalette.text : CyberPalette.muted,
+                  ),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Column(
@@ -193,8 +211,10 @@ class CyberPrimaryButton extends StatelessWidget {
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: CyberPalette.text,
+                          style: TextStyle(
+                            color: enabled
+                                ? CyberPalette.text
+                                : CyberPalette.muted,
                             fontWeight: FontWeight.w900,
                             fontSize: 24,
                             letterSpacing: 1.2,
@@ -206,7 +226,9 @@ class CyberPrimaryButton extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: CyberPalette.text.withValues(alpha: 0.9),
+                            color: enabled
+                                ? CyberPalette.text.withValues(alpha: 0.9)
+                                : CyberPalette.muted,
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                           ),

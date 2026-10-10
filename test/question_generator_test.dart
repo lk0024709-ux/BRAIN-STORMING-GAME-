@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:brain_speed_iq/config/app_config.dart';
 import 'package:brain_speed_iq/models/age_band.dart';
 import 'package:brain_speed_iq/models/math_level.dart';
 import 'package:brain_speed_iq/models/question.dart';
@@ -8,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('every age band builds four unique choices with a real answer', () {
-    const ages = [6, 7, 9, 10, 13, 16, 17, 28, 60];
+    const ages = [6, 7, 9, 10, 12, 13, 16, 17, 18, 28, 60];
     for (final age in ages) {
       final generator = QuestionGenerator(random: Random(age * 91));
       for (var i = 0; i < 80; i++) {
@@ -20,7 +21,7 @@ void main() {
         expect(question.hint.trim(), isNotEmpty);
         expect(question.display.trim(), isNotEmpty);
         expect(question.band, ageBandFor(age));
-        if (age < 10) {
+        if (age < 13) {
           expect(question.kind, QuestionKind.arithmetic);
           expect(question.display, matches(RegExp(r'^\d+ [+-] \d+$')));
           for (final option in question.options) {
@@ -32,7 +33,7 @@ void main() {
   });
 
   test('all 120 levels generate age-appropriate questions', () {
-    const ages = [6, 10, 17];
+    const ages = [6, 12, 13, 17, 18];
     for (final age in ages) {
       for (var level = 1; level <= MathLevelInfo.campaignLength; level++) {
         final stage = MathLevelInfo.forAge(age, level);
@@ -45,7 +46,7 @@ void main() {
         expect(question.correctOption, question.formattedAnswer);
         expect(question.band, ageBandFor(age));
 
-        if (age < 10) {
+        if (age < 13) {
           expect(question.kind, QuestionKind.arithmetic);
           expect(question.display, matches(RegExp(r'^\d+ [+-] \d+$')));
         } else if (stage.topic == MathLevelTopic.numberSeries ||
@@ -59,6 +60,15 @@ void main() {
         }
       }
     }
+  });
+
+  test('age gates match the kid, teen, and adult tracks', () {
+    expect(ageBandFor(12), AgeBand.kids);
+    expect(ageBandFor(13), AgeBand.teens);
+    expect(ageBandFor(17), AgeBand.teens);
+    expect(ageBandFor(18), AgeBand.adults);
+    expect(isCoppaChild(12), isTrue);
+    expect(isCoppaChild(13), isFalse);
   });
 
   test('the 120-level chapters change with the selected age band', () {

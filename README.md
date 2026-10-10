@@ -19,9 +19,9 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
 - **Onboarding** saves age, terms acceptance, nickname, and a starting coin purse (80 under 13, 40 otherwise).
 - **Math Quest** is a visible, age-based campaign with **120 numbered levels** (four 30-level chapters). Each correct answer unlocks the next level; a miss leaves the current level open to retry. Completing level 120 unlocks an increasingly difficult Master Mode.
 - **QuestionGenerator** procedurally builds every question and scales the numbers with the level—nothing is a hardcoded quiz bank.
-  - Under 10: addition, subtraction, then mixed arithmetic.
-  - 10–16: multiplication, BODMAS, number patterns, then mixed math.
-  - 17+: advanced BODMAS, sequences, decimals, then mixed math.
+  - Ages 6–12: addition, subtraction, then mixed arithmetic.
+  - Ages 13–17: multiplication, BODMAS, number patterns, then mixed math.
+  - Ages 18+: advanced BODMAS, sequences, decimals, then mixed math.
 - **Level Map** shows all 120 stages as complete, current, or locked, with the player's age-specific chapters and progress.
 - **Gameplay** is a comic page with generated hero and rival portraits, a thought cloud, and 2×2 answer panels.
   - Hint costs 10 coins and drops a yellow banner inside the cloud.
