@@ -31,6 +31,7 @@ class StorageService {
   static const keyFiftyTokens = 'fifty_tokens';
   static const keyChanceTokens = 'chance_tokens';
   static const keySound = 'sound_on';
+  static const keyMusic = 'music_on';
   static const keyNameplate = 'nameplate';
   static const keyOwned = 'owned_nameplates';
 
@@ -79,6 +80,13 @@ class StorageService {
     await _prefs.setBool(keySound, profile.soundOn);
     await _prefs.setString(keyNameplate, profile.nameplateId);
     await _prefs.setStringList(keyOwned, profile.ownedNameplates);
+  }
+
+  /// Battle music is a separate switch from sound effects. Defaults to on.
+  bool readMusicOn() => _prefs.getBool(keyMusic) ?? true;
+
+  Future<void> writeMusicOn(bool enabled) async {
+    await _prefs.setBool(keyMusic, enabled);
   }
 
   Future<void> clear() => _prefs.clear();

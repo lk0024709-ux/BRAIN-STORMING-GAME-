@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../content/legal_copy.dart';
+import '../controllers/music_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
 import '../services/iap_service.dart';
@@ -75,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final profile = context.watch<ProfileController>();
     final iap = context.watch<IAPService>();
+    final music = context.watch<MusicController>();
     final data = profile.profile;
     final band = ageBandFor(data.userAge);
     return Scaffold(
@@ -161,6 +163,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       Icon(data.soundOn ? Icons.volume_up : Icons.volume_off),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Battle music has its own switch. Sound effects above are not
+                // affected by it.
+                Semantics(
+                  button: true,
+                  toggled: music.enabled,
+                  child: MergeSemantics(
+                    child: NeoBox(
+                      color: MangaColors.white,
+                      onTap: () => music.setEnabled(!music.enabled),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              music.enabled
+                                  ? 'Battle music on'
+                                  : 'Battle music off',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            music.enabled
+                                ? Icons.music_note_rounded
+                                : Icons.music_off_rounded,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),

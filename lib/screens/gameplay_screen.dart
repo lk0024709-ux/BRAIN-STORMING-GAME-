@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
+import '../controllers/music_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/question.dart';
 import '../theme/cyber_palette.dart';
@@ -28,19 +29,27 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> {
   Timer? _ticker;
   bool _advancing = false;
+  MusicController? _music;
 
   @override
   void initState() {
     super.initState();
+    _music = context.read<MusicController>();
     _ticker = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (!mounted) return;
       context.read<GameController>().onTick();
+    });
+    // Start the battle track after the first frame, so the route is on screen
+    // before audio begins. Battle startup does not wait for audio.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _music?.enterBattle(this);
     });
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
+    _music?.exitBattle(this);
     super.dispose();
   }
 
@@ -152,6 +161,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   Widget build(BuildContext context) {
     final game = context.watch<GameController>();
     final profile = context.watch<ProfileController>().profile;
+    final music = context.watch<MusicController>();
     final question = game.question;
 
     return PopScope(
@@ -206,6 +216,19 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: music.enabled
+                                  ? 'Turn battle music off'
+                                  : 'Turn battle music on',
+                              onPressed: () => music.setEnabled(!music.enabled),
+                              icon: Icon(
+                                music.enabled
+                                    ? Icons.music_note_rounded
+                                    : Icons.music_off_rounded,
+                                color: CyberPalette.text,
+                                size: 22,
                               ),
                             ),
                             if (profile.streak > 1)
