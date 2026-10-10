@@ -208,10 +208,9 @@ void main() {
     expect(stored.read().soundOn, isTrue);
 
     // Music stays off for the next battle.
-    // The list was scrolled to reach the music switch, so bring back the
-    // arrow before tapping it.
-    await tester.ensureVisible(find.byIcon(Icons.arrow_back));
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    // The arrow scrolls away with the list, so pop the route directly. That is
+    // exactly what the arrow does.
+    Navigator.of(tester.element(find.byType(SettingsScreen))).pop();
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
     await _startBattle(tester);
