@@ -53,7 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
     final profile = context.read<ProfileController>();
     try {
-      // Save the age gate before any optional ad or billing SDK is initialized.
+      // Save the age gate before the player can open a purchase flow.
       await profile.completeOnboarding(
         nickname: _name.text.trim(),
         age: _ageValue,
@@ -197,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       if (child) ...[
                         const SizedBox(height: 8),
                         const Text(
-                          'Under 13: no ads, no ad tracking. COPPA mode stays on until the saved age changes.',
+                          'Under 13: a parent check is required before purchases.',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ],

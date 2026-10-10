@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 import '../models/question.dart';
 import '../models/reward.dart';
-import '../services/ad_service.dart';
 import '../services/banter_service.dart';
 import '../services/question_generator.dart';
 import '../services/reward_engine.dart';
@@ -18,7 +17,6 @@ enum ToolOutcome { applied, notEnoughCoins, alreadyUsed, unavailable }
 class GameController extends ChangeNotifier {
   GameController({
     required this.profile,
-    required this.ads,
     QuestionGenerator? generator,
     RewardEngine? rewards,
     BanterService? banter,
@@ -29,7 +27,6 @@ class GameController extends ChangeNotifier {
         _random = random ?? Random();
 
   final ProfileController profile;
-  final AdService ads;
   final QuestionGenerator generator;
   final RewardEngine rewards;
   final BanterService banter;
@@ -131,14 +128,6 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  /// Grants a free hint without coin deduction (e.g. from Rewarded Ad callback).
-  void grantFreeHint() {
-    if (hintVisible || phase == RoundPhase.resolved) return;
-    hintVisible = true;
-    _speak(BanterEvent.hint);
-    notifyListeners();
-  }
-
   /// [⚖️ 50/50] booster (Costs 25 coins): Disables 2 incorrect options.
   Future<ToolOutcome> useFifty() async {
     if (phase == RoundPhase.resolved) return ToolOutcome.unavailable;
@@ -199,33 +188,9 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  /// Grants free 50/50 without coin deduction (e.g. from Rewarded Ad callback).
-  void grantFreeFifty() {
-    if (phase == RoundPhase.resolved) return;
-    final current = question;
-    if (current == null) return;
-    final wrongs = <int>[
-      for (var i = 0; i < current.options.length; i++)
-        if (i != current.correctIndex && !removed.contains(i)) i,
-    ];
-    if (wrongs.length < 2) return;
-    wrongs.shuffle(_random);
-    removed
-      ..add(wrongs[0])
-      ..add(wrongs[1]);
-    _speak(BanterEvent.fifty);
-    notifyListeners();
-  }
-
-  /// Interstitial Ads trigger automatically after every 3 completed levels.
   Future<void> nextRound() async {
     if (_toolInFlight) return;
     if (failed && !_roundSettled) await finalizeMiss();
-    final completed = reward != null;
-    final levels = profile.profile.levelsCompleted;
-    if (completed) {
-      await ads.maybeShowInterstitial(levels);
-    }
     sessionRound += 1;
     _loadRound();
   }

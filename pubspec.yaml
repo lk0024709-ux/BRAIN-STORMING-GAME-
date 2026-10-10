@@ -1,5 +1,5 @@
 name: brain_speed_iq
-description: BrainSpeed IQ — a neo-brutalist manga brain-training game with age-adaptive drills, XP ranks, AdMob + Meta mediation, and a Pro plan.
+description: BrainSpeed IQ — an ad-free neo-brutalist manga brain-training game with generated character art, age-adaptive drills, XP ranks, and a Pro plan.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -12,8 +12,6 @@ dependencies:
     sdk: flutter
   provider: ^6.1.5+1
   shared_preferences: ^2.5.6
-  google_mobile_ads: ^9.1.0
-  gma_mediation_meta: ^1.7.0
   in_app_purchase: ^3.3.1
 
 dev_dependencies:
@@ -23,3 +21,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/

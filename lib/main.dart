@@ -4,7 +4,7 @@ import 'app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Orientation is declared in AndroidManifest. Keep optional Ads/Billing SDK
-  // initialization out of app launch; each service starts only when needed.
+  // Orientation is declared in AndroidManifest. Billing starts only after an
+  // explicit purchase or restore action.
   runApp(const BrainSpeedApp());
 }

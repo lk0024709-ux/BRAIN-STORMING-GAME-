@@ -64,12 +64,6 @@ class ProfileController extends ChangeNotifier {
     await _save();
   }
 
-  Future<void> addCoins(int amount) async {
-    if (amount <= 0) return;
-    profile = profile.copyWith(coins: profile.coins + amount);
-    await _save();
-  }
-
   Future<bool> trySpend(int amount) async {
     if (amount < 0 || profile.coins < amount) return false;
     profile = profile.copyWith(coins: profile.coins - amount);

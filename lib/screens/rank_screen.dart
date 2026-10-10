@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../controllers/profile_controller.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
-import '../widgets/banner_ad_slot.dart';
 import '../widgets/manga_avatar.dart';
 import '../widgets/neo_widgets.dart';
 import '../widgets/rank_widgets.dart';
@@ -252,8 +251,6 @@ class RankScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Safe-Area Adaptive Banner Ad (Completely disabled for Pro users)
-                const BannerAdSlot(),
               ],
             ),
           ),

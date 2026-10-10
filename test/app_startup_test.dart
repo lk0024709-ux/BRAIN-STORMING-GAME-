@@ -1,7 +1,6 @@
 import 'package:brain_speed_iq/app.dart';
 import 'package:brain_speed_iq/screens/home_screen.dart';
 import 'package:brain_speed_iq/screens/onboarding_screen.dart';
-import 'package:brain_speed_iq/services/ad_service.dart';
 import 'package:brain_speed_iq/services/iap_service.dart';
 import 'package:brain_speed_iq/services/storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +32,5 @@ void main() {
     final context = tester.element(find.byType(HomeScreen));
     expect(context.read<IAPService>().started, isFalse);
     expect(context.read<IAPService>().storeQueryDone, isFalse);
-    expect(context.read<AdService>().sdkReady, isFalse);
   });
 }

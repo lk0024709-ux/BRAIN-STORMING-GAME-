@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
-import '../services/ad_service.dart';
 import '../services/banter_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -30,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final BanterService _banter = BanterService();
   BanterPair? _pair;
   Timer? _timer;
-  bool _adsRequested = false;
 
   @override
   void didChangeDependencies() {
@@ -55,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _start() {
     final profile = context.read<ProfileController>();
-    final ads = context.read<AdService>();
     if (profile.profile.soundOn) {
       SystemSound.play(SystemSoundType.click);
     }
@@ -63,25 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute<void>(
         builder: (_) => ChangeNotifierProvider(
-          create: (_) => GameController(profile: profile, ads: ads)..startSession(),
+          create: (_) => GameController(profile: profile)..startSession(),
           child: const GameplayScreen(),
         ),
       ),
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _prepareAdsAfterInteraction();
-    });
-  }
-
-  void _prepareAdsAfterInteraction() {
-    if (_adsRequested) return;
-    _adsRequested = true;
-    final profile = context.read<ProfileController>();
-    unawaited(
-      context.read<AdService>().configure(
-            age: profile.userAge,
-            isPro: profile.isProUser,
-          ),
     );
   }
 
@@ -127,7 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 NeoBox(
                   color: MangaColors.white,
                   onTap: () {
-                    _prepareAdsAfterInteraction();
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -186,7 +167,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: 'RANK',
                         color: MangaColors.rankFill(data.forgedTier),
                         onPressed: () {
-                          _prepareAdsAfterInteraction();
                           Navigator.push(
                             context,
                             MaterialPageRoute<void>(
@@ -202,7 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: 'SHOP',
                         color: MangaColors.yellow,
                         onPressed: () {
-                          _prepareAdsAfterInteraction();
                           Navigator.push(
                             context,
                             MaterialPageRoute<void>(

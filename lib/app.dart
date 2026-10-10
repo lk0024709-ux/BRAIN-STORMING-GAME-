@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'controllers/profile_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
-import 'services/ad_service.dart';
 import 'services/iap_service.dart';
 import 'services/storage_service.dart';
 import 'theme/manga_colors.dart';
@@ -13,7 +12,7 @@ import 'theme/manga_theme.dart';
 import 'widgets/neo_widgets.dart';
 
 /// Starts the Flutter UI immediately, then loads persisted profile data.
-/// Optional Ads and Billing SDKs are initialized only from explicit user flows.
+/// Billing is initialized only from explicit purchase flows.
 class BrainSpeedApp extends StatefulWidget {
   const BrainSpeedApp({super.key});
 
@@ -36,7 +35,6 @@ class _BrainSpeedAppState extends State<BrainSpeedApp> {
     await profile.load();
     return _AppServices(
       profile: profile,
-      ads: AdService(),
       iap: IAPService(),
     );
   }
@@ -68,7 +66,6 @@ class _BrainSpeedAppState extends State<BrainSpeedApp> {
               ChangeNotifierProvider<ProfileController>.value(
                 value: services.profile,
               ),
-              ChangeNotifierProvider<AdService>.value(value: services.ads),
               ChangeNotifierProvider<IAPService>.value(value: services.iap),
             ],
             child: const _RootGate(),
@@ -82,12 +79,10 @@ class _BrainSpeedAppState extends State<BrainSpeedApp> {
 class _AppServices {
   const _AppServices({
     required this.profile,
-    required this.ads,
     required this.iap,
   });
 
   final ProfileController profile;
-  final AdService ads;
   final IAPService iap;
 }
 

@@ -1,6 +1,6 @@
 # BrainSpeed IQ
 
-Neo-brutalist manga brain-training game. Procedural questions, a running stopwatch (no countdown), pure XP ranks, AdMob + Meta mediation, and a lifetime Pro plan.
+An ad-free neo-brutalist manga brain-training game. It generates age-adaptive questions, tracks solve times, awards XP ranks, and offers an optional lifetime Pro upgrade.
 
 ## Jaldi shuru kaise karein
 
@@ -12,20 +12,19 @@ flutter test
 flutter run
 ```
 
-Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slider hilaaye bina dojo nahi khulega. Under 13 pe ads SDK start hi nahi hota. The app renders a branded startup screen before loading local storage. Ads/Billing platform services are kept out of app launch: ads configure after the player opens an ad-enabled feature, and Billing starts only on the Pro screen or an explicit restore action.
+Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The app renders its startup screen before loading the local profile. There are no ads or advertising SDKs. Google Play Billing starts only from the Pro screen or an explicit restore action.
 
 ## What you get
 
-- **Onboarding** saves `userAge`, terms acceptance, nickname, and a starting coin purse (80 under 13, 40 otherwise).
+- **Onboarding** saves age, terms acceptance, nickname, and a starting coin purse (80 under 13, 40 otherwise).
 - **QuestionGenerator** builds every drill. Nothing is a hardcoded quiz bank.
   - Under 10: single- and double-digit addition and subtraction.
   - 10–16: multiplication, basic BODMAS, missing-number series.
   - 17+: multi-operator BODMAS, rapid series, decimals.
-- **Gameplay** is a comic page: hero, rival, thought cloud, 2×2 panels.
+- **Gameplay** is a comic page with generated hero and rival portraits, a thought cloud, and 2×2 answer panels.
   - Hint costs 10 coins and drops a yellow banner inside the cloud.
-  - 50/50 costs 25 coins and kills two wrong panels.
+  - 50/50 costs 25 coins and removes two wrong panels.
   - An affordable first miss offers one Second Chance for 40 coins or a stored chance token. The same stopwatch keeps running; the miss is only recorded if the player moves on or misses again.
-  - Short on coins and 13+? Watch an ad for a free hint or +20 coins.
 - **Stopwatch rewards**
   - ≤ 5.0s Lightning Fast — +20 coins, +40 XP
   - 5.1–12.0s Sharp Brain — +10 coins, +20 XP
@@ -33,52 +32,30 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. Slid
   - slower Solved — +0 coins, +5 XP
   - Pro doubles XP only.
 - **Ranks** are forged, not automatic. Bronze 0–1k, Silver 1k–5k, Gold 5k–20k, Diamond 20k+. Cross a threshold and **Evolve Rank** plays the medal-forging celebration.
-- **Ads**: interstitial every 3 correct levels, rewarded on demand, banners on Rank and Shop. Meta Audience Network is mediated through AdMob.
-- **Pro** (`brainspeed_iq_pro`, non-consumable): ad-free banners and interstitials, 2× XP, golden nameplate + crown. Under 13 must pass a parent math gate before the Play sheet opens.
+- **Shop** lets players spend earned coins on booster tokens and nameplates.
+- **Pro** (`brainspeed_iq_pro`, non-consumable): 2× XP, golden nameplate, and crown badge. Under 13 must pass a parent math check before the Play purchase sheet opens.
 
 ## Project map
 
 ```
 lib/
   models/        question, rank, reward, profile, nameplates
-  services/      QuestionGenerator, RewardEngine, AdService, IAPService, storage
+  services/      QuestionGenerator, RewardEngine, IAPService, storage
   controllers/   ProfileController, GameController
   screens/       onboarding, home, gameplay, rank, shop, pro, settings, legal
-  widgets/       neo-brutalist chrome, avatars, cloud, comic popup, forge
+  widgets/       neo-brutalist chrome, generated avatars, cloud, comic popup, forge
+assets/images/   generated hero and rival portraits
 .github/workflows/build_apk.yml
 android/         AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0
 ```
 
 Local keys include the ones the product contract asked for: `userAge`, `coins`, `total_xp`, `isProUser`.
 
-## Ads — AdMob + Meta
+## Privacy and purchases
 
-Development builds use Google's test units (`USE_TEST_ADS` defaults to true) and the test app id `ca-app-pub-3940256099942544~3347511713`. Do not ship those.
+Training progress and profile data are stored locally with SharedPreferences. The app includes no advertising, ad mediation, advertising identifier, or analytics integration. It does not run a user-data server. If a player chooses to purchase or restore Pro, the app uses Google Play Billing; Google Play handles payment and store-account details. Under-13 purchases require the in-app parent check.
 
-1. Create an AdMob app and three units: banner, interstitial, rewarded.
-2. In AdMob, open Mediation and add **Meta Audience Network** as a bidding source on each format. Placement IDs live in the AdMob mediation group, not in Dart. The `gma_mediation_meta` plugin registers the adapter.
-3. Build with real ids:
-
-```bash
-flutter build apk --release \
-  -PADMOB_APP_ID=ca-app-pub-xxxxxxxx~yyyyyyyy \
-  --dart-define=USE_TEST_ADS=false \
-  --dart-define=ADMOB_BANNER_ID=ca-app-pub-xxx/banner \
-  --dart-define=ADMOB_INTERSTITIAL_ID=ca-app-pub-xxx/interstitial \
-  --dart-define=ADMOB_REWARDED_ID=ca-app-pub-xxx/rewarded
-```
-
-Age rules, applied before `MobileAds.initialize`:
-
-| Age | Ads |
-| --- | --- |
-| Under 13 | SDK never starts. No banners, interstitials, rewarded, or Meta calls. |
-| 13–17 | Teen treatment, non-personalized, PG/T cap. |
-| 18+ | Consent form (UMP) first. Personalized only if consent is obtained or not required. |
-
-`DELAY_APP_MEASUREMENT_INIT` is set so measurement waits for that age gate. If someone changes age from 13+ to under 13 after the SDK already started, requests stop and Settings asks for a restart.
-
-Pro disables banner and interstitial immediately. Rewarded stays optional, because the player taps it.
+The in-app Privacy Policy and Terms are also in `PRIVACY_POLICY.md` and `TERMS.md`. Replace `support@brainspeed.iq` and have counsel review them before release.
 
 ## Pro plan — Play Billing
 
@@ -96,13 +73,9 @@ Release signing: copy `android/key.properties.example` to `android/key.propertie
 
 Debug builds have a Settings toggle to grant/drop Pro so the gold nameplate and 2× XP can be checked without Play.
 
-## COPPA / store listing
-
-This is a mixed-audience app, not a Designed for Families child app. The age gate is mandatory. Do not enroll it as primarily child-directed if adults see ads. Declare ads, and declare that under-13 users are not served ads and the SDK is not initialized for them. Privacy and terms are in the app and in `PRIVACY_POLICY.md` / `TERMS.md` — replace `support@brainspeed.iq` and have counsel read them before release.
+## Android build and CI
 
 Play icon: `branding/play_store_512.png`.
-
-## CI
 
 `.github/workflows/build_apk.yml` runs on push, pull request, and manual dispatch. It analyzes, tests, builds a release APK, and uploads `brainspeed-iq-apk` (PRs skip the APK build).
 
@@ -110,17 +83,9 @@ The workflow pins its toolchain in the `env:` block — Flutter 3.47.6 (stable),
 
 The Android Gradle files match current Flutter stable templates (AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0, Java 17). If `flutter create` on your machine prints newer versions, prefer those. Do not go back to AGP 9.3.0/9.3.1: their lint crashes on JDK 17 (`NoSuchMethodError: java.util.List.removeLast()` in the bundled `JavaDocParser`), which fails `flutter build apk --release`. The AGP 9.3 line also needs Gradle 9.5.0 or newer.
 
-Caching, because the Gradle build is ~85% of the run: `setup-java` caches `~/.gradle/caches` (keyed on the `*.gradle.kts` files) and the wrapper distribution separately (keyed on `gradle-wrapper.properties`, so editing a build file does not force Gradle itself to be downloaded again), `flutter-action` caches the Flutter SDK and its engine artifacts, and `org.gradle.caching=true` lets a restored cache serve unchanged Kotlin, dex and resource tasks. The wrapper pulls `gradle-9.5.0-bin.zip` rather than `-all.zip` — CI never reads the bundled sources and docs. Measured on the same commit: `flutter build apk --release` drops from **383s cold to 76s warm** and the whole job from ~6.5 min to ~2.2 min, with a byte-identical APK. Everything except the Gradle build is ~50s either way.
+Caching, because the Gradle build is ~85% of the run: `setup-java` caches `~/.gradle/caches` (keyed on the `*.gradle.kts` files) and the wrapper distribution separately (keyed on `gradle-wrapper.properties`, so editing a build file does not force Gradle itself to be downloaded again), `flutter-action` caches the Flutter SDK and its engine artifacts, and `org.gradle.caching=true` lets a restored cache serve unchanged Kotlin, dex and resource tasks. The wrapper pulls `gradle-9.5.0-bin.zip` rather than `-all.zip` — CI never reads the bundled sources and docs. Measured on the same commit: `flutter build apk --release` drops from **383s cold to 76s warm** and the whole job from ~6.5 min to ~2.2 min. Everything except the Gradle build is ~50s either way.
 
-## iOS
-
-This repo is Android-first because the requested pipeline is an APK. To add iOS:
-
-```bash
-flutter create . --platforms=ios --project-name brain_speed_iq
-```
-
-Then set `GADApplicationIdentifier` to your AdMob app id, add Meta's SKAdNetwork IDs from Google's mediation guide, and create the same non-consumable in App Store Connect.
+This repo is Android-first because the requested pipeline is an APK. To add iOS, create the platform files and configure the same non-consumable product in App Store Connect.
 
 ## Tests
 
@@ -128,4 +93,4 @@ Then set `GADApplicationIdentifier` to your AdMob app id, add Meta's SKAdNetwork
 flutter test
 ```
 
-Covers the age-gated startup, generator (four unique choices, kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.
+Covers the age-gated startup, generated character assets, question generation (four unique choices, kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.

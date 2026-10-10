@@ -4,10 +4,8 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../controllers/profile_controller.dart';
 import '../models/nameplate.dart';
-import '../services/ad_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
-import '../widgets/banner_ad_slot.dart';
 import '../widgets/neo_widgets.dart';
 import 'pro_upgrade_screen.dart';
 
@@ -19,31 +17,6 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
-  bool _busy = false;
-
-  Future<void> _watchAd() async {
-    final ads = context.read<AdService>();
-    final profile = context.read<ProfileController>();
-    if (!ads.rewardedAllowed) {
-      _toast(
-        profile.isChild
-            ? 'Ads stay off under 13. Coins come from solves.'
-            : 'Rewarded ads are not available right now.',
-      );
-      return;
-    }
-    setState(() => _busy = true);
-    final earned = await ads.showRewarded();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (!earned) {
-      _toast('Ad not available right now.');
-      return;
-    }
-    await profile.addCoins(AppConfig.rewardedCoinPayout);
-    if (mounted) _toast('+${AppConfig.rewardedCoinPayout} coins');
-  }
-
   Future<void> _buy(Future<String?> Function() action) async {
     final message = await action();
     if (!mounted) return;
@@ -63,7 +36,6 @@ class _ShopScreenState extends State<ShopScreen> {
   Widget build(BuildContext context) {
     final profile = context.watch<ProfileController>();
     final data = profile.profile;
-    final ads = context.watch<AdService>();
     return Scaffold(
       body: HalftoneBackground(
         child: SafeArea(
@@ -91,17 +63,6 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                           CoinChip(coins: data.coins),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      MangaButton(
-                        label: _busy
-                            ? 'LOADING AD...'
-                            : 'WATCH AD FOR +${AppConfig.rewardedCoinPayout} COINS',
-                        subtitle: ads.rewardedAllowed
-                            ? 'Optional. Never shown to under-13 players.'
-                            : 'Unavailable for this player.',
-                        color: MangaColors.yellow,
-                        onPressed: _busy ? null : _watchAd,
                       ),
                       const SizedBox(height: 12),
                       const SectionTitle('Token packs'),
@@ -164,7 +125,6 @@ class _ShopScreenState extends State<ShopScreen> {
                     ],
                   ),
                 ),
-                const BannerAdSlot(),
               ],
             ),
           ),

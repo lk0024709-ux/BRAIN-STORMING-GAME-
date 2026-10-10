@@ -8,7 +8,6 @@ import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/question.dart';
-import '../services/ad_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
 import '../widgets/comic_popup.dart';
@@ -27,7 +26,6 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> {
   Timer? _ticker;
   bool _advancing = false;
-  bool _adBusy = false;
 
   @override
   void initState() {
@@ -88,51 +86,14 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
   }
 
-  /// Rewarded Ad Prompt: "Watch a short ad for a Free Hint + 20 Coins?"
-  Future<void> _handleBoosterShortage({
-    required String boosterName,
-    required int cost,
-    required VoidCallback onGrantFree,
-  }) async {
-    final ads = context.read<AdService>();
-    final profile = context.read<ProfileController>();
-
-    final accepted = await showBoosterShortagePrompt(
-      context: context,
-      boosterLabel: boosterName,
-      cost: cost,
-      balance: profile.coins,
-      canWatchAd: ads.rewardedAllowed,
-    );
-
-    if (!accepted || !mounted) return;
-
-    setState(() => _adBusy = true);
-    final earned = await ads.showRewarded();
-    if (mounted) setState(() => _adBusy = false);
-    if (!mounted) return;
-
-    if (!earned) {
-      _toast('Ad not completed. No reward granted.');
-      return;
-    }
-
-    // Reward Callback: Grant Free Booster + 20 Coins!
-    await profile.addCoins(AppConfig.rewardedCoinPayout);
-    onGrantFree();
-    _toast('+${AppConfig.rewardedCoinPayout} Coins & Free $boosterName granted!');
-  }
-
   Future<void> _hint() async {
     final game = context.read<GameController>();
     _click();
     final outcome = await game.useHint();
     if (!mounted) return;
     if (outcome == ToolOutcome.notEnoughCoins) {
-      await _handleBoosterShortage(
-        boosterName: 'Hint',
-        cost: AppConfig.hintCost,
-        onGrantFree: game.grantFreeHint,
+      _toast(
+        'Not enough coins for a hint. Solve rounds to earn coins or pick up a hint pack in the Shop.',
       );
     }
   }
@@ -143,10 +104,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final outcome = await game.useFifty();
     if (!mounted) return;
     if (outcome == ToolOutcome.notEnoughCoins) {
-      await _handleBoosterShortage(
-        boosterName: '50/50',
-        cost: AppConfig.fiftyCost,
-        onGrantFree: game.grantFreeFifty,
+      _toast(
+        'Not enough coins for 50/50. Solve rounds to earn coins or pick up a token pack in the Shop.',
       );
     }
   }
@@ -453,43 +412,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
                       ),
                     ),
 
-                  // Loading ad overlay
-                  if (_adBusy)
-                    const Positioned.fill(
-                      child: ColoredBox(
-                        color: Color(0x99111111),
-                        child: Center(
-                          child: NeoBox(
-                            color: MangaColors.yellow,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: MangaColors.ink,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'LOADING REWARDED AD...',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),

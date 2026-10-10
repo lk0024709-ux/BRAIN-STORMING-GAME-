@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:brain_speed_iq/config/app_config.dart';
 import 'package:brain_speed_iq/controllers/game_controller.dart';
 import 'package:brain_speed_iq/controllers/profile_controller.dart';
-import 'package:brain_speed_iq/services/ad_service.dart';
 import 'package:brain_speed_iq/services/question_generator.dart';
 import 'package:brain_speed_iq/services/storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +19,6 @@ Future<ProfileController> makeAdultProfile() async {
 GameController makeGame(ProfileController profile) {
   return GameController(
     profile: profile,
-    ads: AdService(),
     generator: QuestionGenerator(random: Random(7)),
     random: Random(11),
   );

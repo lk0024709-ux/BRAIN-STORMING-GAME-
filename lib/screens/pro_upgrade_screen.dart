@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/profile_controller.dart';
-import '../services/ad_service.dart';
 import '../services/iap_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -34,13 +33,7 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
 
   Future<void> _startPurchaseUpdates() {
     final profile = context.read<ProfileController>();
-    final ads = context.read<AdService>();
-    return context.read<IAPService>().start(
-      grantPro: () async {
-        await profile.unlockPro();
-        ads.onProUnlocked();
-      },
-    );
+    return context.read<IAPService>().start(grantPro: profile.unlockPro);
   }
 
   Future<void> _prepareStore() async {
@@ -223,7 +216,7 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
                                 Text('⚡ ', style: TextStyle(fontSize: 14)),
                                 Expanded(
                                   child: Text(
-                                    'HERO: "2× XP on every solve and zero ad popups! Let\'s forge Diamond rank!"',
+                                    'HERO: "2× XP on every solve, plus a golden nameplate! Let\'s forge Diamond rank!"',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 12,
@@ -263,14 +256,6 @@ class _ProUpgradeScreenState extends State<ProUpgradeScreen> {
                 const SectionTitle('PRO PERKS & PRIVILEGES'),
                 const SizedBox(height: 10),
 
-                const _PerkCard(
-                  icon: '🚫',
-                  title: '100% AD-FREE FOREVER',
-                  badge: 'PURE FOCUS',
-                  badgeColor: MangaColors.pink,
-                  body:
-                      'Banner and Interstitial ads are completely removed immediately. Zero interruptions while solving so you stay in the flow zone.',
-                ),
                 const _PerkCard(
                   icon: '⚡',
                   title: '2× SPEED XP BOOST',

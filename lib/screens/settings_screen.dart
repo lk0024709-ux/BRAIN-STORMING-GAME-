@@ -6,7 +6,6 @@ import '../config/app_config.dart';
 import '../content/legal_copy.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
-import '../services/ad_service.dart';
 import '../services/iap_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -40,32 +39,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _ageChanged(double value) async {
-    final profile = context.read<ProfileController>();
-    final ads = context.read<AdService>();
-    await profile.updateAge(value.round());
-    await ads.configure(age: profile.userAge, isPro: profile.isProUser);
-    if (!mounted) return;
-    if (ads.needsRestartForChildMode) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Ads are off. Restart the app so child-safe mode fully applies.',
-          ),
-        ),
-      );
-    }
+    await context.read<ProfileController>().updateAge(value.round());
   }
 
   Future<void> _restorePurchases() async {
     final profile = context.read<ProfileController>();
-    final ads = context.read<AdService>();
     final iap = context.read<IAPService>();
-    await iap.start(
-      grantPro: () async {
-        await profile.unlockPro();
-        ads.onProUnlocked();
-      },
-    );
+    await iap.start(grantPro: profile.unlockPro);
     if (!mounted) return;
     await iap.restore();
   }
@@ -94,7 +74,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<ProfileController>();
-    final ads = context.watch<AdService>();
     final iap = context.watch<IAPService>();
     final data = profile.profile;
     final band = ageBandFor(data.userAge);
@@ -148,7 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       Text(
                         data.isChild
-                            ? 'COPPA mode: ad SDK stays off.'
+                            ? 'Child profile: age-appropriate drills and parent checks for purchases.'
                             : band.blurb,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
@@ -196,14 +175,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: MangaColors.white,
                   onPressed: () => _legal('Terms of Use', LegalCopy.terms),
                 ),
-                if (ads.privacyOptionsRequired) ...[
-                  const SizedBox(height: 8),
-                  MangaButton(
-                    label: 'AD PRIVACY OPTIONS',
-                    color: MangaColors.blue,
-                    onPressed: ads.showPrivacyOptions,
-                  ),
-                ],
                 const SizedBox(height: 8),
                 MangaButton(
                   label: iap.purchasePending
@@ -238,22 +209,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   MangaButton(
                     label: data.isProUser ? 'DEBUG: DROP PRO' : 'DEBUG: GRANT PRO',
                     color: MangaColors.paperDeep,
-                    onPressed: () async {
-                      await profile.setProForDebug(!data.isProUser);
-                      if (profile.isProUser) {
-                        ads.onProUnlocked();
-                      } else {
-                        await ads.configure(
-                          age: profile.userAge,
-                          isPro: false,
-                        );
-                      }
-                    },
+                    onPressed: () => profile.setProForDebug(!data.isProUser),
                   ),
                 ],
                 const SizedBox(height: 16),
                 Text(
-                  '${AppConfig.appName} ${AppConfig.versionLabel}\n${ads.mediationLabel}\n${ads.usingTestUnits ? 'Test ad units are on. Replace them before release.' : 'Production ad units.'}\n${AppConfig.supportEmail}',
+                  '${AppConfig.appName} ${AppConfig.versionLabel}\n${AppConfig.supportEmail}',
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                 ),
               ],
