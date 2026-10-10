@@ -138,14 +138,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       size: 18,
                     ),
                     SizedBox(width: 6),
-                    Text(
-                      'AGE GATE · VERIFY TO ENTER THE DOJO',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: CyberPalette.muted,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 0.4,
+                    Expanded(
+                      child: Text(
+                        'AGE GATE · VERIFY TO ENTER THE DOJO',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: CyberPalette.muted,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
                   ],
