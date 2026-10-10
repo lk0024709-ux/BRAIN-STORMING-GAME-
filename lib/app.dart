@@ -69,7 +69,11 @@ class _BrainSpeedAppState extends State<BrainSpeedApp> {
   }
 
   void _retry() {
-    setState(() => _services = _loadServices());
+    // Block body: an arrow closure would return the Future, which setState
+    // rejects.
+    setState(() {
+      _services = _loadServices();
+    });
   }
 
   @override
