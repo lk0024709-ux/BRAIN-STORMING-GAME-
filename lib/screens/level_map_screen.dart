@@ -5,9 +5,9 @@ import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
 import '../models/math_level.dart';
-import '../theme/manga_colors.dart';
+import '../theme/cyber_palette.dart';
 import '../theme/manga_theme.dart';
-import '../widgets/neo_widgets.dart';
+import '../widgets/cyber_widgets.dart';
 import 'gameplay_screen.dart';
 
 /// Shows all 120 age-specific campaign levels and the player's unlock state.
@@ -36,7 +36,8 @@ class LevelMapScreen extends StatelessWidget {
         data.levelsCompleted.clamp(0, MathLevelInfo.campaignLength).toInt();
 
     return Scaffold(
-      body: HalftoneBackground(
+      backgroundColor: CyberPalette.background,
+      body: CyberBackdrop(
         child: SafeArea(
           child: DojoFrame(
             child: Column(
@@ -48,12 +49,13 @@ class LevelMapScreen extends StatelessWidget {
                       IconButton(
                         tooltip: 'Back',
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const Icon(Icons.arrow_back, color: CyberPalette.text),
                       ),
                       const Expanded(
                         child: Text(
                           'MATH QUEST · LEVEL MAP',
                           style: TextStyle(
+                            color: CyberPalette.text,
                             fontWeight: FontWeight.w900,
                             fontSize: 17,
                             letterSpacing: 0.5,
@@ -62,7 +64,10 @@ class LevelMapScreen extends StatelessWidget {
                       ),
                       Text(
                         '${data.userAge} YRS',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                          color: CyberPalette.cyan,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ],
                   ),
@@ -71,14 +76,15 @@ class LevelMapScreen extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
                     children: [
-                      NeoBox(
-                        color: MangaColors.yellow,
+                      CyberPanel(
+                        accent: CyberPalette.cyan,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               currentInfo.levelLabel,
                               style: const TextStyle(
+                                color: CyberPalette.text,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 21,
                               ),
@@ -86,22 +92,26 @@ class LevelMapScreen extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${currentInfo.band.label} TRACK · ${currentInfo.title}',
-                              style: const TextStyle(fontWeight: FontWeight.w800),
+                              style: const TextStyle(
+                                color: CyberPalette.muted,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                            const SizedBox(height: 7),
+                            const SizedBox(height: 9),
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(5),
                               child: LinearProgressIndicator(
                                 value: completed / MathLevelInfo.campaignLength,
                                 minHeight: 8,
-                                color: MangaColors.ink,
-                                backgroundColor: MangaColors.white,
+                                color: CyberPalette.cyan,
+                                backgroundColor: const Color(0xFF27324A),
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 6),
                             Text(
                               '$completed / ${MathLevelInfo.campaignLength} CORE LEVELS COMPLETE',
                               style: const TextStyle(
+                                color: CyberPalette.cyan,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 11,
                               ),
@@ -112,16 +122,19 @@ class LevelMapScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       const Text(
                         'Clear a question to unlock the next level. A miss keeps your current level open.',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          color: CyberPalette.muted,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Wrap(
                         spacing: 12,
                         runSpacing: 4,
                         children: [
-                          _MapLegend(color: MangaColors.green, label: 'Complete'),
-                          _MapLegend(color: MangaColors.yellow, label: 'Current'),
-                          _MapLegend(color: MangaColors.disabled, label: 'Locked'),
+                          _MapLegend(color: CyberPalette.mint, label: 'Complete'),
+                          _MapLegend(color: CyberPalette.pink, label: 'Current'),
+                          _MapLegend(color: CyberPalette.edge, label: 'Locked'),
                         ],
                       ),
                       const SizedBox(height: 14),
@@ -134,26 +147,28 @@ class LevelMapScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                       ],
-                      NeoBox(
-                        color: MangaColors.white,
+                      CyberPanel(
+                        accent: CyberPalette.gold,
                         child: const Row(
                           children: [
-                            Icon(Icons.auto_awesome, size: 24),
+                            Icon(Icons.auto_awesome, color: CyberPalette.gold, size: 24),
                             SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'After level 120, Master Mode keeps going with tougher questions.',
-                                style: TextStyle(fontWeight: FontWeight.w800),
+                                style: TextStyle(
+                                  color: CyberPalette.text,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 16),
-                      MangaButton(
+                      CyberPrimaryButton(
                         label: 'PLAY LEVEL $currentLevel',
                         subtitle: currentInfo.title,
-                        color: MangaColors.pink,
                         icon: Icons.play_arrow,
                         onPressed: () => _startNextLevel(context, profile),
                       ),
@@ -185,8 +200,8 @@ class _LevelChapter extends StatelessWidget {
     final chapter = MathLevelInfo.forAge(age, firstLevel);
     final lastLevel = firstLevel + MathLevelInfo.levelsPerChapter - 1;
 
-    return NeoBox(
-      color: MangaColors.white,
+    return CyberPanel(
+      accent: chapter.chapter.isOdd ? CyberPalette.blue : CyberPalette.pink,
       padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,6 +209,7 @@ class _LevelChapter extends StatelessWidget {
           Text(
             'CHAPTER ${chapter.chapter} · LEVELS $firstLevel–$lastLevel',
             style: const TextStyle(
+              color: CyberPalette.muted,
               fontWeight: FontWeight.w900,
               fontSize: 11,
               letterSpacing: 0.4,
@@ -201,7 +217,11 @@ class _LevelChapter extends StatelessWidget {
           ),
           Text(
             chapter.title,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            style: const TextStyle(
+              color: CyberPalette.text,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 10),
           GridView.builder(
@@ -219,35 +239,45 @@ class _LevelChapter extends StatelessWidget {
               final isComplete = level <= completedLevels;
               final isCurrent = level == completedLevels + 1;
               final fill = isComplete
-                  ? MangaColors.green
+                  ? const Color(0xFF10352F)
                   : isCurrent
-                      ? MangaColors.yellow
-                      : MangaColors.disabled;
+                      ? const Color(0xFF27203E)
+                      : CyberPalette.panelDeep;
+              final accent = isComplete
+                  ? CyberPalette.mint
+                  : isCurrent
+                      ? CyberPalette.pink
+                      : const Color(0xFF39445A);
               final icon = isComplete
                   ? Icons.check
                   : isCurrent
                       ? Icons.play_arrow
                       : Icons.lock_outline;
               final ink = isComplete || isCurrent
-                  ? MangaColors.ink
-                  : MangaColors.disabledInk;
+                  ? CyberPalette.text
+                  : CyberPalette.muted.withValues(alpha: 0.55);
 
               return Container(
                 decoration: BoxDecoration(
                   color: fill,
-                  border: Border.all(color: MangaColors.ink, width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: MangaColors.ink,
-                      offset: Offset(2, 2),
-                      blurRadius: 0,
-                    ),
-                  ],
+                  border: Border.all(
+                    color: accent.withValues(alpha: isCurrent ? 0.95 : 0.65),
+                    width: isCurrent ? 1.5 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: isCurrent
+                      ? [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.3),
+                            blurRadius: 9,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(icon, size: 15, color: ink),
+                    Icon(icon, size: 15, color: accent),
                     Text(
                       '$level',
                       style: TextStyle(
@@ -284,13 +314,17 @@ class _MapLegend extends StatelessWidget {
           height: 11,
           decoration: BoxDecoration(
             color: color,
-            border: Border.all(color: MangaColors.ink, width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.75), width: 1.5),
           ),
         ),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
+          style: const TextStyle(
+            color: CyberPalette.muted,
+            fontWeight: FontWeight.w700,
+            fontSize: 10,
+          ),
         ),
       ],
     );

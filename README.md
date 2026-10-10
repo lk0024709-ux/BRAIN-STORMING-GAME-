@@ -1,6 +1,6 @@
 # BrainSpeed IQ
 
-An ad-free neo-brutalist manga brain-training game. It generates age-adaptive questions, tracks solve times, awards XP ranks, and offers an optional lifetime Pro upgrade.
+An ad-free neon cyber-duel math game with a dark blue-and-pink arena UI, generated manga rivals, and a 120-level age-adaptive campaign. It tracks solve times, awards XP ranks, and offers an optional lifetime Pro upgrade.
 
 ## Jaldi shuru kaise karein
 

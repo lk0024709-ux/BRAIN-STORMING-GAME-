@@ -8,9 +8,11 @@ import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/question.dart';
+import '../theme/cyber_palette.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
 import '../widgets/comic_popup.dart';
+import '../widgets/cyber_widgets.dart';
 import '../widgets/dialogue_strip.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/neo_widgets.dart';
@@ -158,7 +160,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
         if (!didPop) _leave();
       },
       child: Scaffold(
-        body: HalftoneBackground(
+        backgroundColor: CyberPalette.background,
+        body: CyberBackdrop(
           child: SafeArea(
             child: DojoFrame(
               child: Stack(
@@ -174,7 +177,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               onPressed: _leave,
                               icon: const Icon(
                                 Icons.close,
-                                color: MangaColors.ink,
+                                color: CyberPalette.text,
                                 size: 26,
                               ),
                             ),
@@ -186,6 +189,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                   Text(
                                     game.levelInfo.levelLabel,
                                     style: const TextStyle(
+                                      color: CyberPalette.text,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 0.5,
                                       fontSize: 15,
@@ -196,6 +200,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
+                                      color: CyberPalette.muted,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 10,
                                     ),
