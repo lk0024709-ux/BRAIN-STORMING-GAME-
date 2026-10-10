@@ -17,10 +17,12 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
 ## What you get
 
 - **Onboarding** saves age, terms acceptance, nickname, and a starting coin purse (80 under 13, 40 otherwise).
-- **QuestionGenerator** builds every drill. Nothing is a hardcoded quiz bank.
-  - Under 10: single- and double-digit addition and subtraction.
-  - 10–16: multiplication, basic BODMAS, missing-number series.
-  - 17+: multi-operator BODMAS, rapid series, decimals.
+- **Math Quest** is a visible, age-based campaign with **120 numbered levels** (four 30-level chapters). Each correct answer unlocks the next level; a miss leaves the current level open to retry. Completing level 120 unlocks an increasingly difficult Master Mode.
+- **QuestionGenerator** procedurally builds every question and scales the numbers with the level—nothing is a hardcoded quiz bank.
+  - Under 10: addition, subtraction, then mixed arithmetic.
+  - 10–16: multiplication, BODMAS, number patterns, then mixed math.
+  - 17+: advanced BODMAS, sequences, decimals, then mixed math.
+- **Level Map** shows all 120 stages as complete, current, or locked, with the player's age-specific chapters and progress.
 - **Gameplay** is a comic page with generated hero and rival portraits, a thought cloud, and 2×2 answer panels.
   - Hint costs 10 coins and drops a yellow banner inside the cloud.
   - 50/50 costs 25 coins and removes two wrong panels.
@@ -39,10 +41,10 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
 
 ```
 lib/
-  models/        question, rank, reward, profile, nameplates
+  models/        question, age-based math levels, rank, reward, profile, nameplates
   services/      QuestionGenerator, RewardEngine, IAPService, storage
   controllers/   ProfileController, GameController
-  screens/       onboarding, home, gameplay, rank, shop, pro, settings, legal
+  screens/       onboarding, home, 120-level map, gameplay, rank, shop, pro, settings, legal
   widgets/       neo-brutalist chrome, generated avatars, cloud, comic popup, forge
 assets/images/   generated hero and rival portraits
 .github/workflows/build_apk.yml
@@ -93,4 +95,4 @@ This repo is Android-first because the requested pipeline is an APK. To add iOS,
 flutter test
 ```
 
-Covers the age-gated startup, generated character assets, question generation (four unique choices, kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.
+Covers the age-gated startup, generated character assets, all 120 age-appropriate level generators, chapter mapping, unlock/retry progression, question choices (kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.

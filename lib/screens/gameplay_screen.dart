@@ -63,8 +63,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
     final leave = await showConfirmDialog(
       context: context,
-      title: 'LEAVE THE ROUND?',
-      body: 'The stopwatch stops if you walk out. No reward for a half-solve.',
+      title: 'LEAVE THIS LEVEL?',
+      body: 'The stopwatch stops if you walk out. This level stays open until you solve it.',
       confirmLabel: 'LEAVE',
     );
     if (leave && mounted) Navigator.pop(context);
@@ -179,13 +179,28 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               ),
                             ),
                             Expanded(
-                              child: Text(
-                                'ROUND ${game.sessionRound}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
-                                  fontSize: 16,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    game.levelInfo.levelLabel,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${game.levelInfo.title} · CHAPTER ${game.levelInfo.chapter}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             if (profile.streak > 1)
@@ -338,6 +353,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                     Positioned.fill(
                       child: ComicPopup(
                         reward: game.reward!,
+                        levelNumber: game.levelNumber,
                         onNext: _advancing ? () {} : _next,
                       ),
                     ),
@@ -401,8 +417,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
                             ],
                             const SizedBox(height: 12),
                             MangaButton(
-                              label: _advancing ? 'LOADING...' : 'NEXT CLOUD',
-                              subtitle: 'Shake it off and try again',
+                              label: _advancing ? 'LOADING...' : 'RETRY LEVEL',
+                              subtitle: 'Solve this level to unlock the next',
                               color: MangaColors.pink,
                               icon: Icons.refresh,
                               onPressed: _advancing || game.toolsBusy ? null : _next,

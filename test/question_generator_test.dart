@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:brain_speed_iq/models/age_band.dart';
+import 'package:brain_speed_iq/models/math_level.dart';
 import 'package:brain_speed_iq/models/question.dart';
 import 'package:brain_speed_iq/services/question_generator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,63 @@ void main() {
         }
       }
     }
+  });
+
+  test('all 120 levels generate age-appropriate questions', () {
+    const ages = [6, 10, 17];
+    for (final age in ages) {
+      for (var level = 1; level <= MathLevelInfo.campaignLength; level++) {
+        final stage = MathLevelInfo.forAge(age, level);
+        final question = QuestionGenerator(
+          random: Random(age * 1000 + level),
+        ).generate(age, level: level);
+
+        expect(question.options, hasLength(4), reason: 'age $age level $level');
+        expect(question.options.toSet(), hasLength(4));
+        expect(question.correctOption, question.formattedAnswer);
+        expect(question.band, ageBandFor(age));
+
+        if (age < 10) {
+          expect(question.kind, QuestionKind.arithmetic);
+          expect(question.display, matches(RegExp(r'^\d+ [+-] \d+$')));
+        } else if (stage.topic == MathLevelTopic.numberSeries ||
+            stage.topic == MathLevelTopic.advancedSeries) {
+          expect(question.kind, QuestionKind.series);
+        } else if (stage.topic == MathLevelTopic.decimals) {
+          expect(question.kind, QuestionKind.decimal);
+        } else if (stage.topic == MathLevelTopic.bodmas ||
+            stage.topic == MathLevelTopic.complexBodmas) {
+          expect(question.kind, QuestionKind.bodmas);
+        }
+      }
+    }
+  });
+
+  test('the 120-level chapters change with the selected age band', () {
+    final kids = List.generate(
+      MathLevelInfo.campaignLength,
+      (index) => MathLevelInfo.forAge(8, index + 1).topic,
+    );
+    final teens = List.generate(
+      MathLevelInfo.campaignLength,
+      (index) => MathLevelInfo.forAge(14, index + 1).topic,
+    );
+    final adults = List.generate(
+      MathLevelInfo.campaignLength,
+      (index) => MathLevelInfo.forAge(21, index + 1).topic,
+    );
+
+    expect(kids[0], MathLevelTopic.addition);
+    expect(kids[30], MathLevelTopic.subtraction);
+    expect(kids[60], MathLevelTopic.mixedArithmetic);
+    expect(teens[0], MathLevelTopic.multiplication);
+    expect(teens[30], MathLevelTopic.bodmas);
+    expect(teens[60], MathLevelTopic.numberSeries);
+    expect(adults[0], MathLevelTopic.complexBodmas);
+    expect(adults[30], MathLevelTopic.advancedSeries);
+    expect(adults[60], MathLevelTopic.decimals);
+    expect(MathLevelInfo.forAge(21, 121).number, 121);
+    expect(MathLevelInfo.forAge(21, 121).difficulty, greaterThan(10));
   });
 
   test('same seed is stable', () {

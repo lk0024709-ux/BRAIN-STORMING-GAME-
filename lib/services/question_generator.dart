@@ -1,35 +1,55 @@
 import 'dart:math';
 
 import '../models/age_band.dart';
+import '../models/math_level.dart';
 import '../models/question.dart';
 
-/// Procedural, age-adaptive drill generator. Nothing is hardcoded as a quiz bank.
+/// Procedural, age-adaptive quiz generator. Questions scale with campaign level.
 class QuestionGenerator {
   QuestionGenerator({Random? random}) : _random = random ?? Random();
 
   final Random _random;
 
-  GeneratedQuestion generate(int age) {
-    final safeAge = age.clamp(6, 60);
-    final band = ageBandFor(safeAge);
-    final built = switch (band) {
-      AgeBand.kids => _kids(safeAge),
-      AgeBand.teens => _teens(safeAge),
-      AgeBand.adults => _adults(),
+  GeneratedQuestion generate(int age, {int level = 1}) {
+    final safeAge = age.clamp(6, 60).toInt();
+    final stage = MathLevelInfo.forAge(safeAge, level);
+    final band = stage.band;
+    final difficulty = stage.difficulty;
+    final built = switch (stage.topic) {
+      MathLevelTopic.addition =>
+        _kidsAddition(safeAge, difficulty: difficulty),
+      MathLevelTopic.subtraction =>
+        _kidsSubtraction(safeAge, difficulty: difficulty),
+      MathLevelTopic.mixedArithmetic =>
+        _kids(safeAge, difficulty: difficulty),
+      MathLevelTopic.multiplication =>
+        _multiplication(safeAge, difficulty: difficulty),
+      MathLevelTopic.bodmas => _basicBodmas(difficulty: difficulty),
+      MathLevelTopic.numberSeries =>
+        _series(simple: true, difficulty: difficulty),
+      MathLevelTopic.mixedTeen => _teens(safeAge, difficulty: difficulty),
+      MathLevelTopic.complexBodmas => _complexBodmas(difficulty: difficulty),
+      MathLevelTopic.advancedSeries =>
+        _series(simple: false, difficulty: difficulty),
+      MathLevelTopic.decimals => _decimals(difficulty: difficulty),
+      MathLevelTopic.mixedAdult => _adults(difficulty: difficulty),
     };
     return _seal(built, band);
   }
 
-  _Draft _kids(int age) {
-    final subtraction = _random.nextInt(10) < 4;
-    if (subtraction) return _kidsSubtraction(age);
-    return _kidsAddition(age);
+  _Draft _kids(int age, {required int difficulty}) {
+    final subtraction = _random.nextInt(2) == 0;
+    if (subtraction) {
+      return _kidsSubtraction(age, difficulty: difficulty);
+    }
+    return _kidsAddition(age, difficulty: difficulty);
   }
 
-  _Draft _kidsAddition(int age) {
+  _Draft _kidsAddition(int age, {required int difficulty}) {
     final young = age < 8;
-    final a = young ? 1 + _random.nextInt(9) : 4 + _random.nextInt(36);
-    final b = young ? 1 + _random.nextInt(9) : 2 + _random.nextInt(28);
+    final cap = young ? 5 + difficulty * 4 : 15 + difficulty * 8;
+    final a = 1 + _random.nextInt(cap);
+    final b = 1 + _random.nextInt(cap);
     final answer = a + b;
     return _Draft(
       display: '$a + $b',
@@ -43,10 +63,11 @@ class QuestionGenerator {
     );
   }
 
-  _Draft _kidsSubtraction(int age) {
+  _Draft _kidsSubtraction(int age, {required int difficulty}) {
     final young = age < 8;
-    final b = young ? 1 + _random.nextInt(8) : 2 + _random.nextInt(24);
-    final a = b + (young ? 1 + _random.nextInt(8) : 3 + _random.nextInt(28));
+    final cap = young ? 4 + difficulty * 3 : 10 + difficulty * 8;
+    final b = 1 + _random.nextInt(cap);
+    final a = b + 1 + _random.nextInt(cap);
     final answer = a - b;
     return _Draft(
       display: '$a - $b',
@@ -58,32 +79,36 @@ class QuestionGenerator {
     );
   }
 
-  _Draft _teens(int age) {
+  _Draft _teens(int age, {required int difficulty}) {
     switch (_random.nextInt(3)) {
       case 0:
-        return _multiplication(age);
+        return _multiplication(age, difficulty: difficulty);
       case 1:
-        return _basicBodmas();
+        return _basicBodmas(difficulty: difficulty);
       default:
-        return _series(simple: true);
+        return _series(simple: true, difficulty: difficulty);
     }
   }
 
-  _Draft _adults() {
+  _Draft _adults({required int difficulty}) {
     switch (_random.nextInt(3)) {
       case 0:
-        return _complexBodmas();
+        return _complexBodmas(difficulty: difficulty);
       case 1:
-        return _series(simple: false);
+        return _series(simple: false, difficulty: difficulty);
       default:
-        return _decimals();
+        return _decimals(difficulty: difficulty);
     }
   }
 
-  _Draft _multiplication(int age) {
+  _Draft _multiplication(int age, {required int difficulty}) {
     final older = age >= 13;
-    final a = older ? 11 + _random.nextInt(18) : 2 + _random.nextInt(11);
-    final b = older ? 3 + _random.nextInt(7) : 2 + _random.nextInt(11);
+    final a = older
+        ? 8 + _random.nextInt(11 + difficulty * 2)
+        : 2 + _random.nextInt(6 + difficulty);
+    final b = older
+        ? 2 + _random.nextInt(3 + difficulty ~/ 2)
+        : 2 + _random.nextInt(6 + difficulty);
     final answer = a * b;
     return _Draft(
       display: '$a × $b',
@@ -95,12 +120,12 @@ class QuestionGenerator {
     );
   }
 
-  _Draft _basicBodmas() {
+  _Draft _basicBodmas({required int difficulty}) {
     switch (_random.nextInt(4)) {
       case 0:
-        final a = 2 + _random.nextInt(18);
-        final b = 2 + _random.nextInt(8);
-        final c = 2 + _random.nextInt(8);
+        final a = 2 + _random.nextInt(18 + difficulty * 3);
+        final b = 2 + _random.nextInt(8 + difficulty);
+        final c = 2 + _random.nextInt(8 + difficulty);
         final answer = a + b * c;
         return _Draft(
           display: '$a + $b × $c',
@@ -111,9 +136,9 @@ class QuestionGenerator {
           nonNegative: true,
         );
       case 1:
-        final a = 2 + _random.nextInt(12);
-        final b = 2 + _random.nextInt(12);
-        final c = 2 + _random.nextInt(6);
+        final a = 2 + _random.nextInt(12 + difficulty * 2);
+        final b = 2 + _random.nextInt(12 + difficulty * 2);
+        final c = 2 + _random.nextInt(6 + difficulty ~/ 2);
         final answer = (a + b) * c;
         return _Draft(
           display: '($a + $b) × $c',
@@ -124,8 +149,8 @@ class QuestionGenerator {
           nonNegative: true,
         );
       case 2:
-        final b = 2 + _random.nextInt(8);
-        final a = 2 + _random.nextInt(9);
+        final b = 2 + _random.nextInt(8 + difficulty);
+        final a = 2 + _random.nextInt(9 + difficulty * 2);
         final product = a * b;
         final sub = 1 + _random.nextInt(product - 1);
         final answer = product - sub;
@@ -138,9 +163,9 @@ class QuestionGenerator {
           nonNegative: true,
         );
       default:
-        final c = 1 + _random.nextInt(6);
-        final b = c + 2 + _random.nextInt(8);
-        final a = 2 + _random.nextInt(9);
+        final c = 1 + _random.nextInt(6 + difficulty ~/ 2);
+        final b = c + 2 + _random.nextInt(8 + difficulty);
+        final a = 2 + _random.nextInt(9 + difficulty * 2);
         final answer = a * (b - c);
         return _Draft(
           display: '$a × ($b - $c)',
@@ -153,14 +178,14 @@ class QuestionGenerator {
     }
   }
 
-  _Draft _complexBodmas() {
+  _Draft _complexBodmas({required int difficulty}) {
     switch (_random.nextInt(4)) {
       case 0:
-        final a = 6 + _random.nextInt(18);
-        final b = 4 + _random.nextInt(14);
-        final c = 2 + _random.nextInt(6);
+        final a = 6 + _random.nextInt(18 + difficulty * 2);
+        final b = 4 + _random.nextInt(14 + difficulty);
+        final c = 2 + _random.nextInt(6 + difficulty ~/ 2);
         final product = (a + b) * c;
-        final d = 1 + _random.nextInt(min(18, product));
+        final d = 1 + _random.nextInt(min(18 + difficulty, product));
         final answer = product - d;
         return _Draft(
           display: '($a + $b) × $c - $d',
@@ -171,10 +196,10 @@ class QuestionGenerator {
           nonNegative: true,
         );
       case 1:
-        final a = 3 + _random.nextInt(8);
-        final b = 3 + _random.nextInt(8);
-        final c = 2 + _random.nextInt(7);
-        final d = 2 + _random.nextInt(7);
+        final a = 3 + _random.nextInt(8 + difficulty);
+        final b = 3 + _random.nextInt(8 + difficulty);
+        final c = 2 + _random.nextInt(7 + difficulty ~/ 2);
+        final d = 2 + _random.nextInt(7 + difficulty ~/ 2);
         final answer = a * b + c * d;
         return _Draft(
           display: '$a × $b + $c × $d',
@@ -185,13 +210,11 @@ class QuestionGenerator {
           nonNegative: true,
         );
       case 2:
-        final b = 2 + _random.nextInt(7);
-        final c = 2 + _random.nextInt(8);
-        final a = 4 + _random.nextInt(20);
-        final d = 2 + _random.nextInt(15);
+        final b = 2 + _random.nextInt(7 + difficulty ~/ 2);
+        final c = 2 + _random.nextInt(8 + difficulty);
+        final a = 4 + _random.nextInt(20 + difficulty * 2);
+        final d = 2 + _random.nextInt(15 + difficulty);
         final answer = a + b * c - d;
-        // Keep the drill fair: if subtraction would go negative, flip the sign visually
-        // by rebuilding a larger starting number. We already allow a small a, so clamp.
         if (answer < 0) {
           final fixedA = d + 2;
           final fixed = fixedA + b * c - d;
@@ -213,11 +236,11 @@ class QuestionGenerator {
           nonNegative: true,
         );
       default:
-        final a = 4 + _random.nextInt(8);
-        final b = 4 + _random.nextInt(8);
+        final a = 4 + _random.nextInt(8 + difficulty);
+        final b = 4 + _random.nextInt(8 + difficulty);
         final product = a * b;
         final c = 1 + _random.nextInt(product - 1);
-        final d = 3 + _random.nextInt(16);
+        final d = 3 + _random.nextInt(16 + difficulty);
         final answer = product - c + d;
         return _Draft(
           display: '($a × $b - $c) + $d',
@@ -230,14 +253,18 @@ class QuestionGenerator {
     }
   }
 
-  _Draft _series({required bool simple}) {
+  _Draft _series({required bool simple, required int difficulty}) {
     final geometric = !simple && _random.nextBool();
-    if (geometric) return _geometricSeries();
+    if (geometric) return _geometricSeries(difficulty: difficulty);
     final alternating = !simple && _random.nextInt(3) == 0;
-    if (alternating) return _alternatingSeries();
+    if (alternating) return _alternatingSeries(difficulty: difficulty);
 
-    final start = simple ? 1 + _random.nextInt(12) : 2 + _random.nextInt(20);
-    final step = simple ? 2 + _random.nextInt(5) : 4 + _random.nextInt(9);
+    final start = simple
+        ? 1 + _random.nextInt(12 + difficulty * 3)
+        : 2 + _random.nextInt(20 + difficulty * 4);
+    final step = simple
+        ? 2 + _random.nextInt(5 + difficulty)
+        : 4 + _random.nextInt(9 + difficulty * 2);
     final terms = List<int>.generate(4, (i) => start + step * i);
     final answer = start + step * 4;
     final hideMiddle = !simple && _random.nextBool();
@@ -263,27 +290,28 @@ class QuestionGenerator {
     );
   }
 
-  _Draft _geometricSeries() {
-    final start = 2 + _random.nextInt(4);
+  _Draft _geometricSeries({required int difficulty}) {
+    final start = 2 + _random.nextInt(4 + difficulty ~/ 4);
+    final ratio = difficulty < 8 ? 2 : 2 + _random.nextInt(2);
     final terms = <int>[start];
     for (var i = 0; i < 3; i++) {
-      terms.add(terms.last * 2);
+      terms.add(terms.last * ratio);
     }
-    final answer = terms.last * 2;
+    final answer = terms.last * ratio;
     return _Draft(
       display: '${terms.join(', ')}, ?',
       answer: answer,
-      hint: 'Each number is doubled.',
+      hint: 'Each number is multiplied by $ratio.',
       kind: QuestionKind.series,
-      extraWrongs: [answer + start, terms.last + start, answer ~/ 2 + start],
+      extraWrongs: [answer + start, terms.last + start, answer ~/ ratio + start],
       nonNegative: true,
     );
   }
 
-  _Draft _alternatingSeries() {
-    final start = 4 + _random.nextInt(12);
-    final up = 4 + _random.nextInt(5);
-    final down = 1 + _random.nextInt(3);
+  _Draft _alternatingSeries({required int difficulty}) {
+    final start = 4 + _random.nextInt(12 + difficulty * 2);
+    final up = 4 + _random.nextInt(5 + difficulty);
+    final down = 1 + _random.nextInt(min(3, 1 + difficulty ~/ 3));
     final terms = <int>[start];
     for (var i = 0; i < 4; i++) {
       final delta = i.isEven ? up : -down;
@@ -300,10 +328,10 @@ class QuestionGenerator {
     );
   }
 
-  _Draft _decimals() {
+  _Draft _decimals({required int difficulty}) {
     if (_random.nextBool()) {
-      final a = 5 + _random.nextInt(35);
-      final b = 5 + _random.nextInt(35);
+      final a = 5 + _random.nextInt(35 + difficulty * 8);
+      final b = 5 + _random.nextInt(35 + difficulty * 8);
       final sum = a + b;
       return _Draft(
         display: '${_tenths(a)} + ${_tenths(b)}',
@@ -317,9 +345,9 @@ class QuestionGenerator {
         ],
       );
     }
-    final a = 5 + _random.nextInt(20);
-    final b = 5 + _random.nextInt(20);
-    final c = 2 + _random.nextInt(4);
+    final a = 5 + _random.nextInt(20 + difficulty * 4);
+    final b = 5 + _random.nextInt(20 + difficulty * 4);
+    final c = 2 + _random.nextInt(4 + difficulty ~/ 3);
     final sum = a + b;
     final product = sum * c;
     return _Draft(

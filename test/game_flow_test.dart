@@ -25,6 +25,37 @@ GameController makeGame(ProfileController profile) {
 }
 
 void main() {
+  test('correct answers unlock the next age-based campaign level', () async {
+    final profile = await makeAdultProfile();
+    final game = makeGame(profile)..startSession();
+
+    expect(game.levelNumber, 1);
+    expect(game.levelInfo.title, 'Advanced BODMAS');
+    await game.submit(game.question!.correctIndex);
+
+    expect(profile.profile.levelsCompleted, 1);
+    expect(game.levelNumber, 1); // The solved level stays visible in its reward.
+    await game.nextRound();
+    expect(game.levelNumber, 2);
+    expect(game.levelInfo.title, 'Advanced BODMAS');
+    game.dispose();
+  });
+
+  test('a missed answer does not unlock another level', () async {
+    final profile = await makeAdultProfile();
+    final game = makeGame(profile)..startSession();
+    final wrongIndex = (game.question!.correctIndex + 1) % 4;
+
+    await game.submit(wrongIndex);
+    expect(game.hasPendingSecondChance, isTrue);
+    await game.finalizeMiss();
+    await game.nextRound();
+
+    expect(profile.profile.levelsCompleted, 0);
+    expect(game.levelNumber, 1);
+    game.dispose();
+  });
+
   test('a recoverable miss uses one paid second chance and keeps elapsed time',
       () async {
     final profile = await makeAdultProfile();

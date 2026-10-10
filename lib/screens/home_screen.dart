@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../models/age_band.dart';
+import '../models/math_level.dart';
 import '../services/banter_service.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
@@ -13,6 +15,7 @@ import '../widgets/dialogue_strip.dart';
 import '../widgets/neo_widgets.dart';
 import '../widgets/rank_widgets.dart';
 import 'gameplay_screen.dart';
+import 'level_map_screen.dart';
 import 'pro_upgrade_screen.dart';
 import 'rank_screen.dart';
 import 'settings_screen.dart';
@@ -51,6 +54,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _showLevels() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const LevelMapScreen()),
+    );
+  }
+
   void _start() {
     final profile = context.read<ProfileController>();
     if (profile.profile.soundOn) {
@@ -73,6 +83,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final data = profile.profile;
     final pair = _pair ?? const BanterPair('Cloud\'s ready.', 'Then start.');
     final next = data.nextTier;
+    final currentLevel = data.levelsCompleted + 1;
+    final levelInfo = MathLevelInfo.forAge(data.userAge, currentLevel);
+    final coreLevelsDone =
+        data.levelsCompleted.clamp(0, MathLevelInfo.campaignLength).toInt();
     return Scaffold(
       body: HalftoneBackground(
         child: SafeArea(
@@ -104,6 +118,91 @@ class _HomeScreenState extends State<HomeScreen> {
                   rivalLine: pair.rival,
                   pro: data.isProUser,
                   nameplate: data.equippedNameplate,
+                ),
+                const SizedBox(height: 14),
+                NeoBox(
+                  color: MangaColors.yellow,
+                  onTap: _showLevels,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: MangaColors.white,
+                          border: Border.all(color: MangaColors.ink, width: 3),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: MangaColors.ink,
+                              offset: Offset(3, 3),
+                              blurRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '$currentLevel',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 22,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              levelInfo.band.label + ' MATH QUEST',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              levelInfo.levelLabel,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 17,
+                              ),
+                            ),
+                            Text(
+                              '${levelInfo.title} · CHAPTER ${levelInfo.chapter}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: coreLevelsDone /
+                                    MathLevelInfo.campaignLength,
+                                minHeight: 7,
+                                color: MangaColors.ink,
+                                backgroundColor: MangaColors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              data.levelsCompleted >=
+                                      MathLevelInfo.campaignLength
+                                  ? '120 / 120 CORE LEVELS · MASTER MODE OPEN'
+                                  : '$coreLevelsDone / 120 LEVELS COMPLETE · TAP TO VIEW MAP',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.map_outlined, size: 24),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
                 NeoBox(
@@ -153,8 +252,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 14),
                 MangaButton(
-                  label: 'START BATTLE',
-                  subtitle: 'Stopwatch starts when the cloud lands',
+                  label: 'START QUIZ · LEVEL $currentLevel',
+                  subtitle: '${levelInfo.title} · stopwatch starts on question',
                   color: MangaColors.pink,
                   icon: Icons.bolt,
                   onPressed: _start,

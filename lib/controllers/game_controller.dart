@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
+import '../models/math_level.dart';
 import '../models/question.dart';
 import '../models/reward.dart';
 import '../services/banter_service.dart';
@@ -47,7 +48,8 @@ class GameController extends ChangeNotifier {
   bool _roundSettled = false;
   String heroLine = '';
   String rivalLine = '';
-  int sessionRound = 1;
+  int levelNumber = 1;
+  late MathLevelInfo levelInfo;
 
   bool get inputEnabled => phase == RoundPhase.playing && !_toolInFlight;
 
@@ -64,7 +66,6 @@ class GameController extends ChangeNotifier {
       !_roundSettled;
 
   void startSession() {
-    sessionRound = 1;
     _loadRound();
   }
 
@@ -191,7 +192,6 @@ class GameController extends ChangeNotifier {
   Future<void> nextRound() async {
     if (_toolInFlight) return;
     if (failed && !_roundSettled) await finalizeMiss();
-    sessionRound += 1;
     _loadRound();
   }
 
@@ -240,7 +240,9 @@ class GameController extends ChangeNotifier {
   }
 
   void _loadRound() {
-    question = generator.generate(profile.userAge);
+    levelNumber = profile.profile.levelsCompleted + 1;
+    levelInfo = MathLevelInfo.forAge(profile.userAge, levelNumber);
+    question = generator.generate(profile.userAge, level: levelNumber);
     phase = RoundPhase.playing;
     selectedIndex = null;
     hintVisible = false;

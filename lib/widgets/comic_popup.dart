@@ -12,10 +12,12 @@ class ComicPopup extends StatefulWidget {
   const ComicPopup({
     super.key,
     required this.reward,
+    required this.levelNumber,
     required this.onNext,
   });
 
   final RewardResult reward;
+  final int levelNumber;
   final VoidCallback onNext;
 
   @override
@@ -111,6 +113,16 @@ class _ComicPopupState extends State<ComicPopup>
                           ),
                         ),
                         const SizedBox(height: 6),
+                        Text(
+                          'LEVEL ${widget.levelNumber} COMPLETE · NEXT LEVEL OPEN',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
                         // Exact Time Badge
                         Container(
@@ -157,7 +169,7 @@ class _ComicPopupState extends State<ComicPopup>
 
                         // Action button
                         MangaButton(
-                          label: 'NEXT CLOUD',
+                          label: 'NEXT LEVEL',
                           subtitle: 'Keep the momentum going',
                           color: MangaColors.mint,
                           icon: Icons.arrow_forward,
