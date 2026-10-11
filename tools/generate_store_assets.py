@@ -28,6 +28,7 @@ import json
 import math
 import os
 import random
+from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
@@ -440,8 +441,61 @@ def grid_layer(inside, color=rgba("#00FFFF", 26), purple=rgba("#8A2BE2", 26)):
 
 
 # ------------------------------------------------------------------ bust prep
+def drop_stray_islands(alpha: Image.Image, keep_share: float = 0.25) -> Image.Image:
+    """Keep the subject and drop background blobs the flood fill could not reach.
+
+    Renders with mist, glow or particles leave islands of backdrop behind the
+    character; a studio backdrop cannot. Component labelling runs on a quarter
+    scale grid and the surviving mask is grown back before it is applied, so the
+    subject edge is never clipped.
+    """
+    small = alpha.resize(
+        (max(1, alpha.width // 4), max(1, alpha.height // 4)), Image.NEAREST
+    )
+    solid = np.array(small) > 96
+    h, w = solid.shape
+    seen = np.zeros_like(solid)
+    components: list[list[tuple[int, int]]] = []
+    for y0 in range(h):
+        for x0 in range(w):
+            if not solid[y0, x0] or seen[y0, x0]:
+                continue
+            queue = deque([(y0, x0)])
+            seen[y0, x0] = True
+            cells: list[tuple[int, int]] = []
+            while queue:
+                y, x = queue.popleft()
+                cells.append((y, x))
+                for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= ny < h and 0 <= nx < w and solid[ny, nx] and not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        queue.append((ny, nx))
+            components.append(cells)
+    if len(components) <= 1:
+        return alpha
+    components.sort(key=len, reverse=True)
+    largest = len(components[0])
+    keep = np.zeros_like(solid)
+    dropped = 0
+    for cells in components:
+        if len(cells) >= keep_share * largest:
+            for y, x in cells:
+                keep[y, x] = True
+        else:
+            dropped += 1
+    if dropped:
+        print(f"  dropped {dropped} stray background island(s)")
+    keep_img = Image.fromarray((keep * 255).astype(np.uint8), "L")
+    keep_img = (
+        keep_img.resize(alpha.size, Image.NEAREST)
+        .filter(ImageFilter.MaxFilter(5))
+        .filter(ImageFilter.GaussianBlur(1.2))
+    )
+    return ImageChops.multiply(alpha, keep_img)
+
+
 def cut_bust(path: str) -> Image.Image:
-    """Drop the flat white studio background, keep the line art."""
+    """Drop the flat studio background, keep the rendered subject."""
     im = Image.open(path).convert("RGBA")
     rgb = im.convert("RGB")
     key = (255, 0, 255)
@@ -457,6 +511,7 @@ def cut_bust(path: str) -> Image.Image:
     is_key = (arr[:, :, 0] > 248) & (arr[:, :, 1] < 8) & (arr[:, :, 2] > 248)
     alpha = np.where(is_key, 0, 255).astype(np.uint8)
     alpha_img = Image.fromarray(alpha, "L").filter(ImageFilter.GaussianBlur(0.9))
+    alpha_img = drop_stray_islands(alpha_img)
     out = im.copy()
     out.putalpha(alpha_img)
     bbox = out.getbbox()
