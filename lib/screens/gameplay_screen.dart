@@ -8,6 +8,7 @@ import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/music_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../models/question.dart';
 import '../services/reward_engine.dart';
 import '../theme/cyber_palette.dart';
 import '../theme/manga_colors.dart';
