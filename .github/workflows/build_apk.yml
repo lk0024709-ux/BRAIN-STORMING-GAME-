@@ -28,6 +28,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout Repository
@@ -93,6 +96,27 @@ jobs:
       - name: Run Tests
         run: flutter test
 
+
+      - name: TEMP report failures
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          {
+            echo 'Analyzer:'
+            echo '```'
+            flutter analyze --no-fatal-infos 2>&1 | tail -c 20000
+            echo '```'
+          } > body.md
+          {
+            echo 'Tests:'
+            echo '```'
+            flutter test 2>&1 | tail -c 60000
+            echo '```'
+          } >> body.md
+          gh pr comment 6 --body-file body.md || true
 
       # Conditionally skip the heavy APK build on PRs to save CI minutes
       - name: Build Release APK
