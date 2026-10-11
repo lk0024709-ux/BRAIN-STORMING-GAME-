@@ -65,7 +65,18 @@ class BattleDojoTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+      builder: (context, progress, child) => Opacity(
+        opacity: progress,
+        child: Transform.translate(
+          offset: Offset(0, (1 - progress) * 10),
+          child: child,
+        ),
+      ),
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         FittedBox(
@@ -105,6 +116,7 @@ class BattleDojoTitle extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -271,7 +283,19 @@ class BattleCloud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      builder: (context, progress, child) => Opacity(
+        opacity: progress,
+        child: Transform.scale(
+          scale: 0.94 + (0.06 * progress),
+          alignment: Alignment.center,
+          child: child,
+        ),
+      ),
+      child: Stack(
       clipBehavior: Clip.none,
       children: [
         const Positioned.fill(
@@ -337,6 +361,7 @@ class BattleCloud extends StatelessWidget {
           child: BattleXpBadge(text: xpText),
         ),
       ],
+      ),
     );
   }
 }
