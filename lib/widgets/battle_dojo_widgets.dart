@@ -156,7 +156,7 @@ class BattleHeroChip extends StatelessWidget {
                 alignment: const Alignment(0, -0.6),
                 gaplessPlayback: true,
                 semanticLabel: 'Hero portrait',
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.person,
                   color: CyberPalette.cyan,
                   size: 40,

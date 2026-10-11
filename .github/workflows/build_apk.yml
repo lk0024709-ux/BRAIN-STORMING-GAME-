@@ -88,7 +88,12 @@ jobs:
         run: flutter pub get
 
       - name: Run Analyzer
-        run: flutter analyze --no-fatal-infos
+        run: |
+          # TEMP DIAGNOSTIC: surface analyzer messages as check annotations.
+          flutter analyze --no-fatal-infos > analyze_out.txt 2>&1 || true
+          grep -E "^\s*(error|warning|info) " analyze_out.txt | head -45 | while IFS= read -r line; do echo "::error::${line}"; done
+          tail -3 analyze_out.txt | while IFS= read -r line; do echo "::error::TAIL ${line}"; done
+          flutter analyze --no-fatal-infos
 
       - name: Run Tests
         run: flutter test
