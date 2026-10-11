@@ -73,6 +73,27 @@ void main() {
       }
     });
 
+    test('the raw sources stay 1024x1024 so the generator can re-run', () {
+      for (final skin in SkinCatalog.defaults.skins) {
+        final file = File('assets/skins/raw/${skin.id}.png');
+        expect(file.existsSync(), isTrue, reason: 'missing ${file.path}');
+        final bytes = file.readAsBytesSync();
+        // PNG signature, then IHDR width/height as big-endian int32.
+        expect(
+          bytes.sublist(0, 8),
+          [137, 80, 78, 71, 13, 10, 26, 10],
+          reason: '${file.path} is not a PNG',
+        );
+        int be32(int at) =>
+            (bytes[at] << 24) |
+            (bytes[at + 1] << 16) |
+            (bytes[at + 2] << 8) |
+            bytes[at + 3];
+        expect(be32(16), 1024, reason: '${file.path} must be 1024px wide');
+        expect(be32(20), 1024, reason: '${file.path} must be 1024px tall');
+      }
+    });
+
     test('the shipped store_config.json decodes to the same catalog', () {
       final source =
           File('assets/skins/store_config.json').readAsStringSync();
