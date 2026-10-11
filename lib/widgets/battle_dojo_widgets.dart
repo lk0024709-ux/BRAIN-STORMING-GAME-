@@ -286,9 +286,9 @@ class BattleCloud extends StatelessWidget {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
       duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOutCubic,
       builder: (context, progress, child) => Opacity(
-        opacity: progress.clamp(0.0, 1.0),
+        opacity: progress,
         child: Transform.scale(
           scale: 0.94 + (0.06 * progress),
           alignment: Alignment.center,
