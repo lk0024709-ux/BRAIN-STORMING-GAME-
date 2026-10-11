@@ -8,16 +8,15 @@ import '../config/app_config.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/music_controller.dart';
 import '../controllers/profile_controller.dart';
-import '../models/question.dart';
+import '../services/reward_engine.dart';
 import '../theme/cyber_palette.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
+import '../widgets/battle_dojo_widgets.dart';
 import '../widgets/comic_popup.dart';
 import '../widgets/cyber_widgets.dart';
-import '../widgets/dialogue_strip.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/neo_widgets.dart';
-import '../widgets/thought_cloud.dart';
 
 class GameplayScreen extends StatefulWidget {
   const GameplayScreen({super.key});
@@ -164,6 +163,17 @@ class _GameplayScreenState extends State<GameplayScreen> {
     final music = context.watch<MusicController>();
     final question = game.question;
 
+    // Max XP the player can still earn this round (fastest band, Pro-doubled).
+    final maxPreviewXp = const RewardEngine()
+        .evaluate(elapsed: Duration.zero, isPro: profile.isProUser)
+        .xp;
+    final String xpText;
+    if (game.phase == RoundPhase.resolved) {
+      xpText = '+${game.reward?.xp ?? 0} IQ XP';
+    } else {
+      xpText = 'UP TO +$maxPreviewXp IQ XP';
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -172,293 +182,395 @@ class _GameplayScreenState extends State<GameplayScreen> {
       child: Scaffold(
         backgroundColor: CyberPalette.background,
         body: CyberBackdrop(
-          child: SafeArea(
-            child: DojoFrame(
-              child: Stack(
-                children: [
-                  Column(
+          child: Stack(
+            children: [
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: BattleGridFloorPainter()),
+                ),
+              ),
+              SafeArea(
+                child: DojoFrame(
+                  child: Stack(
                     children: [
-                      // Header Navigation Bar
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: _leave,
-                              icon: const Icon(
-                                Icons.close,
-                                color: CyberPalette.text,
-                                size: 26,
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    game.levelInfo.levelLabel,
-                                    style: const TextStyle(
-                                      color: CyberPalette.text,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${game.levelInfo.title} · CHAPTER ${game.levelInfo.chapter}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: CyberPalette.muted,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: music.enabled
-                                  ? 'Turn battle music off'
-                                  : 'Turn battle music on',
-                              onPressed: () => music.setEnabled(!music.enabled),
-                              icon: Icon(
-                                music.enabled
-                                    ? Icons.music_note_rounded
-                                    : Icons.music_off_rounded,
-                                color: CyberPalette.text,
-                                size: 22,
-                              ),
-                            ),
-                            if (profile.streak > 1)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: MangaColors.pink,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: MangaColors.ink,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '🔥 ${profile.streak}',
-                                    style: const TextStyle(
-                                      color: MangaColors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 12,
-                                    ),
+                      Column(
+                        children: [
+                          // Header: close, music toggle, streak, timer, coins.
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  onPressed: _leave,
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: CyberPalette.text,
+                                    size: 26,
                                   ),
                                 ),
-                              ),
-                            // Running Elapsed Stopwatch Engine: ⏱️ 00.0s
-                            ValueListenableBuilder<Duration>(
-                              valueListenable: game.elapsed,
-                              builder: (context, duration, _) {
-                                return NeoBox(
-                                  color: MangaColors.ink,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: music.enabled
+                                      ? 'Turn battle music off'
+                                      : 'Turn battle music on',
+                                  onPressed: () =>
+                                      music.setEnabled(!music.enabled),
+                                  icon: Icon(
+                                    music.enabled
+                                        ? Icons.music_note_rounded
+                                        : Icons.music_off_rounded,
+                                    color: CyberPalette.text,
+                                    size: 22,
                                   ),
-                                  offset: const Offset(2, 2),
-                                  borderWidth: 2,
-                                  child: Text(
-                                    '⏱️ ${formatStopwatch(duration)}s',
-                                    style: const TextStyle(
-                                      color: MangaColors.yellow,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 14,
-                                      letterSpacing: 0.5,
+                                ),
+                                if (profile.streak > 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: CyberPalette.pink
+                                            .withValues(alpha: 0.18),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: CyberPalette.pink,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '🔥 ${profile.streak}',
+                                        style: const TextStyle(
+                                          color: CyberPalette.text,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                // Running elapsed stopwatch.
+                                ValueListenableBuilder<Duration>(
+                                  valueListenable: game.elapsed,
+                                  builder: (context, duration, _) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: CyberPalette.panelDeep,
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: CyberPalette.cyan,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '⏱️ ${formatStopwatch(duration)}s',
+                                        style: const TextStyle(
+                                          color: CyberPalette.gold,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 14,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                CoinChip(coins: profile.coins, compact: true),
+                              ],
+                            ),
+                          ),
+
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final cloudHeight =
+                                    (constraints.maxHeight * 0.30)
+                                        .clamp(150.0, 240.0)
+                                        .toDouble();
+                                return SingleChildScrollView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    12,
+                                    4,
+                                    12,
+                                    12,
+                                  ),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minHeight:
+                                          (constraints.maxHeight - 16)
+                                              .clamp(0.0, double.infinity)
+                                              .toDouble(),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const BattleDojoTitle(),
+
+                                        // Level pill, copied from the game state.
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: CyberPalette.gold
+                                                    .withValues(alpha: 0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: CyberPalette.gold,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                game.levelInfo.levelLabel,
+                                                style: const TextStyle(
+                                                  color: CyberPalette.gold,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 0.5,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              child: Text(
+                                                '${game.levelInfo.title} · CHAPTER ${game.levelInfo.chapter}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: CyberPalette.muted,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        // Hero avatar with LIVE tag and stats.
+                                        BattleHeroChip(
+                                          tierLabel: profile.forgedTier.label,
+                                          level: game.levelNumber,
+                                          totalXp: profile.totalXp,
+                                          pro: profile.isProUser,
+                                        ),
+
+                                        // Purple thought cloud with the question.
+                                        if (question != null)
+                                          SizedBox(
+                                            height: cloudHeight,
+                                            child: BattleCloud(
+                                              label: question.kind.cloudLabel,
+                                              formula: question.display,
+                                              xpText: xpText,
+                                              hint: game.hintVisible
+                                                  ? question.hint
+                                                  : null,
+                                            ),
+                                          ),
+
+                                        // Compact neon banter, since the mock has none.
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            BattleBanterLine(
+                                              speaker: 'HERO',
+                                              text: game.heroLine,
+                                              color: CyberPalette.cyan,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            BattleBanterLine(
+                                              speaker: 'RIVAL',
+                                              text: game.rivalLine,
+                                              color: CyberPalette.pink,
+                                            ),
+                                          ],
+                                        ),
+
+                                        // 2x2 neon answer cards.
+                                        if (question != null)
+                                          _OptionGrid(
+                                            options: question.options,
+                                            correctIndex: question.correctIndex,
+                                            selectedIndex: game.selectedIndex,
+                                            removed: game.removed,
+                                            reveal: game.phase ==
+                                                RoundPhase.resolved,
+                                            enabled: game.inputEnabled,
+                                            onPick: _submit,
+                                          ),
+
+                                        // Boosters: hint and 50/50.
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: BattleActionButton(
+                                                label: game.hintVisible
+                                                    ? 'HINT ACTIVE'
+                                                    : profile.hintTokens > 0
+                                                        ? 'HINT · x${profile.hintTokens}'
+                                                        : 'HINT · ${AppConfig.hintCost}',
+                                                subtitle: 'Opens a gold banner',
+                                                accent: CyberPalette.gold,
+                                                icon: Icons.lightbulb_outline,
+                                                onPressed: game.hintVisible ||
+                                                        game.phase ==
+                                                            RoundPhase.resolved ||
+                                                        game.toolsBusy
+                                                    ? null
+                                                    : _hint,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: BattleActionButton(
+                                                label: game.removed.isNotEmpty
+                                                    ? '50/50 USED'
+                                                    : profile.fiftyTokens > 0
+                                                        ? '50/50 · x${profile.fiftyTokens}'
+                                                        : '50/50 · ${AppConfig.fiftyCost}',
+                                                subtitle: 'Disables 2 wrongs',
+                                                accent: CyberPalette.cyan,
+                                                icon: Icons.balance,
+                                                onPressed: game.removed
+                                                            .isNotEmpty ||
+                                                        game.phase ==
+                                                            RoundPhase.resolved ||
+                                                        game.toolsBusy
+                                                    ? null
+                                                    : _fifty,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );
                               },
                             ),
-                            const SizedBox(width: 8),
-                            CoinChip(coins: profile.coins, compact: true),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
 
-                      // Character Header (Boy and Rival with Manga chat bubbles)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: DialogueStrip(
-                          heroName: profile.nickname.isEmpty
-                              ? 'HERO'
-                              : profile.nickname.toUpperCase(),
-                          heroLine: game.heroLine,
-                          rivalLine: game.rivalLine,
-                          pro: profile.isProUser,
-                          nameplate: profile.equippedNameplate,
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      // Central Thought Cloud displaying math puzzle
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: question == null
-                              ? const SizedBox.shrink()
-                              : ThoughtCloud(
-                                  label: question.kind.cloudLabel,
-                                  formula: question.display,
-                                  hint: game.hintVisible ? question.hint : null,
-                                ),
-                        ),
-                      ),
-
-                      // Interactive Grid: 2x2 Large Buttons for answers
-                      if (question != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-                          child: _OptionGrid(
-                            options: question.options,
-                            correctIndex: question.correctIndex,
-                            selectedIndex: game.selectedIndex,
-                            removed: game.removed,
-                            reveal: game.phase == RoundPhase.resolved,
-                            enabled: game.inputEnabled,
-                            onPick: _submit,
+                      // Solved popup with exact time and speed reward (unchanged).
+                      if (game.phase == RoundPhase.resolved &&
+                          game.reward != null)
+                        Positioned.fill(
+                          child: ComicPopup(
+                            reward: game.reward!,
+                            levelNumber: game.levelNumber,
+                            onNext: _advancing ? () {} : _next,
                           ),
                         ),
 
-                      // In-Game Boosters: [💡 Hint] (10 coins) & [⚖️ 50/50] (25 coins)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: MangaButton(
-                                label: game.hintVisible
-                                    ? 'HINT ACTIVE'
-                                    : profile.hintTokens > 0
-                                        ? '💡 HINT · x${profile.hintTokens}'
-                                        : '💡 HINT · ${AppConfig.hintCost}',
-                                subtitle: 'Opens yellow banner',
-                                color: MangaColors.yellow,
-                                onPressed: game.hintVisible ||
-                                        game.phase == RoundPhase.resolved ||
-                                        game.toolsBusy
-                                    ? null
-                                    : _hint,
+                      // Wrong-answer card, restyled to the neon theme.
+                      if (game.phase == RoundPhase.resolved && game.failed)
+                        Positioned(
+                          left: 14,
+                          right: 14,
+                          bottom: 16,
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: CyberPalette.panel,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: CyberPalette.pink,
+                                width: 2,
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: MangaButton(
-                                label: game.removed.isNotEmpty
-                                    ? '50/50 USED'
-                                    : profile.fiftyTokens > 0
-                                        ? '⚖️ 50/50 · x${profile.fiftyTokens}'
-                                        : '⚖️ 50/50 · ${AppConfig.fiftyCost}',
-                                subtitle: 'Disables 2 wrongs',
-                                color: MangaColors.blue,
-                                onPressed: game.removed.isNotEmpty ||
-                                        game.phase == RoundPhase.resolved ||
-                                        game.toolsBusy
-                                    ? null
-                                    : _fifty,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Solved Comic-Style Popup Badge with exact time and speed reward
-                  if (game.phase == RoundPhase.resolved && game.reward != null)
-                    Positioned.fill(
-                      child: ComicPopup(
-                        reward: game.reward!,
-                        levelNumber: game.levelNumber,
-                        onNext: _advancing ? () {} : _next,
-                      ),
-                    ),
-
-                  // Wrong Answer Comic Card
-                  if (game.phase == RoundPhase.resolved && game.failed)
-                    Positioned(
-                      left: 14,
-                      right: 14,
-                      bottom: 16,
-                      child: NeoBox(
-                        color: MangaColors.white,
-                        offset: const Offset(6, 6),
-                        borderWidth: 3,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                const Text('❌', style: TextStyle(fontSize: 24)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'MISSED IT!',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 18,
-                                          color: MangaColors.red,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Correct answer was: ${question?.correctOption ?? ""}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: CyberPalette.pink
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 18,
                                 ),
                               ],
                             ),
-                            if (game.hasPendingSecondChance) ...[
-                              const SizedBox(height: 12),
-                              MangaButton(
-                                label: profile.chanceTokens > 0
-                                    ? 'SECOND CHANCE · USE TOKEN'
-                                    : 'SECOND CHANCE · ${AppConfig.secondChanceCost} COINS',
-                                subtitle: 'One retry · stopwatch keeps running',
-                                color: MangaColors.yellow,
-                                icon: Icons.replay,
-                                onPressed: game.toolsBusy || _advancing
-                                    ? null
-                                    : _secondChance,
-                              ),
-                            ],
-                            const SizedBox(height: 12),
-                            MangaButton(
-                              label: _advancing ? 'LOADING...' : 'RETRY LEVEL',
-                              subtitle: 'Solve this level to unlock the next',
-                              color: MangaColors.pink,
-                              icon: Icons.refresh,
-                              onPressed: _advancing || game.toolsBusy ? null : _next,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      '❌',
+                                      style: TextStyle(fontSize: 24),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'MISSED IT!',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 18,
+                                              color: CyberPalette.pink,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Correct answer was: ${question?.correctOption ?? ""}',
+                                            style: const TextStyle(
+                                              color: CyberPalette.text,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (game.hasPendingSecondChance) ...[
+                                  const SizedBox(height: 12),
+                                  BattleActionButton(
+                                    label: profile.chanceTokens > 0
+                                        ? 'SECOND CHANCE · USE TOKEN'
+                                        : 'SECOND CHANCE · ${AppConfig.secondChanceCost} COINS',
+                                    subtitle:
+                                        'One retry · stopwatch keeps running',
+                                    accent: CyberPalette.gold,
+                                    icon: Icons.replay,
+                                    onPressed: game.toolsBusy || _advancing
+                                        ? null
+                                        : _secondChance,
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                BattleActionButton(
+                                  label: _advancing
+                                      ? 'LOADING...'
+                                      : 'RETRY LEVEL',
+                                  subtitle:
+                                      'Solve this level to unlock the next',
+                                  accent: CyberPalette.pink,
+                                  icon: Icons.refresh,
+                                  onPressed: _advancing || game.toolsBusy
+                                      ? null
+                                      : _next,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -466,8 +578,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
   }
 }
 
-/// 2x2 Interactive Grid of Answer Buttons.
-/// Turn Green on correct, Red on wrong!
+/// 2x2 grid of neon answer cards: A and C purple, B and D cyan.
+/// Reveals correct (mint) and wrong (pink) after an answer.
 class _OptionGrid extends StatelessWidget {
   const _OptionGrid({
     required this.options,
@@ -487,6 +599,13 @@ class _OptionGrid extends StatelessWidget {
   final bool enabled;
   final Future<void> Function(int index) onPick;
 
+  static const _accents = [
+    CyberPalette.purple,
+    CyberPalette.cyan,
+    CyberPalette.purple,
+    CyberPalette.cyan,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
@@ -497,114 +616,32 @@ class _OptionGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        mainAxisExtent: 70,
+        mainAxisExtent: 72,
       ),
       itemBuilder: (context, index) {
         final gone = removed.contains(index);
         final isSelected = selectedIndex == index;
         final isCorrect = index == correctIndex;
 
-        Color fill = MangaColors.optionFills[index];
-        Color textColor = MangaColors.ink;
-
-        if (gone) {
-          fill = MangaColors.disabled;
-          textColor = MangaColors.disabledInk;
-        }
-
-        // Color states: Green on correct, Red on wrong!
+        var state = gone ? BattleAnswerState.removed : BattleAnswerState.idle;
         if (reveal) {
           if (isCorrect) {
-            fill = MangaColors.green;
-            textColor = MangaColors.white;
+            state = BattleAnswerState.correct;
           } else if (isSelected) {
-            fill = MangaColors.red;
-            textColor = MangaColors.white;
+            state = BattleAnswerState.wrong;
           } else {
-            fill = MangaColors.disabled;
-            textColor = MangaColors.disabledInk;
+            state = BattleAnswerState.dimmed;
           }
         }
 
-        final letter = String.fromCharCode(65 + index);
-        final label = gone ? '$letter  —' : '$letter  ${options[index]}';
-
-        return MangaOptionButton(
-          label: label,
-          color: fill,
-          textColor: textColor,
+        return BattleAnswerCard(
+          letter: String.fromCharCode(65 + index),
+          answer: gone ? '—' : options[index],
+          accent: _accents[index],
+          state: state,
           onPressed: !enabled || gone ? null : () => onPick(index),
         );
       },
-    );
-  }
-}
-
-class MangaOptionButton extends StatefulWidget {
-  const MangaOptionButton({
-    super.key,
-    required this.label,
-    required this.color,
-    required this.textColor,
-    required this.onPressed,
-  });
-
-  final String label;
-  final Color color;
-  final Color textColor;
-  final VoidCallback? onPressed;
-
-  @override
-  State<MangaOptionButton> createState() => _MangaOptionButtonState();
-}
-
-class _MangaOptionButtonState extends State<MangaOptionButton> {
-  bool _down = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = widget.onPressed != null;
-    final shift = _down && enabled ? const Offset(3, 3) : Offset.zero;
-
-    return GestureDetector(
-      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
-      onTapCancel: () => setState(() => _down = false),
-      onTapUp: enabled
-          ? (_) {
-              setState(() => _down = false);
-              widget.onPressed?.call();
-            }
-          : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 60),
-        transform: Matrix4.translationValues(shift.dx, shift.dy, 0),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: widget.color,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: MangaColors.ink, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: MangaColors.ink,
-              offset: _down && enabled ? Offset.zero : const Offset(4, 4),
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: Text(
-          widget.label,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: widget.textColor,
-            fontWeight: FontWeight.w900,
-            fontSize: 20,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
     );
   }
 }

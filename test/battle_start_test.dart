@@ -6,6 +6,7 @@ import 'package:brain_speed_iq/screens/gameplay_screen.dart';
 import 'package:brain_speed_iq/screens/home_screen.dart';
 import 'package:brain_speed_iq/screens/onboarding_screen.dart';
 import 'package:brain_speed_iq/screens/settings_screen.dart';
+import 'package:brain_speed_iq/widgets/battle_dojo_widgets.dart';
 import 'package:brain_speed_iq/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -246,6 +247,42 @@ void main() {
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(player.calls, isEmpty);
     expect(tester.takeException(), isNull);
+
+    await _unmount(tester);
+  });
+
+  testWidgets('the Battle Dojo layout fits a small 320x640 phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final player = FakeBattleMusicPlayer();
+    await _pumpApp(tester, player: player);
+    await _startBattle(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(GameplayScreen), findsOneWidget);
+    final battle = find.byType(GameplayScreen);
+    expect(
+      find.descendant(of: battle, matching: find.text('BATTLE DOJO')),
+      findsOneWidget,
+    );
+    expect(find.text('LEVEL 1 / 120'), findsOneWidget);
+    expect(find.byType(BattleAnswerCard), findsNWidgets(4));
+
+    final context = tester.element(battle);
+    final question = context.read<GameController>().question!;
+    expect(find.text(question.display), findsOneWidget);
+
+    // Answering reveals the result card without overflow or exceptions.
+    final option = find.text(question.options.first).first;
+    await tester.ensureVisible(option);
+    await tester.tap(option);
+    await _settleBriefly(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.byType(GameplayScreen), findsOneWidget);
 
     await _unmount(tester);
   });
