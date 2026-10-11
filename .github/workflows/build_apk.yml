@@ -93,6 +93,7 @@ jobs:
       - name: Run Tests
         run: flutter test
 
+
       # Conditionally skip the heavy APK build on PRs to save CI minutes
       - name: Build Release APK
         if: github.event_name != 'pull_request'

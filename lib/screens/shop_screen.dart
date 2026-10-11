@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../controllers/profile_controller.dart';
 import '../models/nameplate.dart';
+import '../models/skin_shop.dart';
 import '../theme/manga_colors.dart';
 import '../theme/manga_theme.dart';
 import '../widgets/neo_widgets.dart';
+import '../widgets/skin_card.dart';
 import 'pro_upgrade_screen.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -17,6 +19,8 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
+  static const _catalog = SkinCatalog.defaults;
+
   Future<void> _buy(Future<String?> Function() action) async {
     final message = await action();
     if (!mounted) return;
@@ -111,6 +115,56 @@ class _ShopScreenState extends State<ShopScreen> {
                           style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
+                      const SizedBox(height: 14),
+                      const SectionTitle('Battle Dojo skin vault'),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Polygon frames follow rarity: hex common, octagon rare, '
+                        'diamond epic, pentagon legendary, triangle mythic, '
+                        'golden hex ultimate. Hearts mark the premium tiers. '
+                        'Equipped skin replaces your hero portrait.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          color: MangaColors.ink.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.60,
+                        children: [
+                          for (final skin in _catalog.skins)
+                            SkinCard(
+                              catalog: _catalog,
+                              skin: skin,
+                              owned: data.ownedSkins.contains(skin.id),
+                              equipped: data.equippedSkinId == skin.id,
+                              coins: data.coins,
+                              onTap: () => _buy(
+                                () => profile.buyOrEquipSkin(skin),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (data.hasEquippedSkin)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: MangaButton(
+                            label: 'REMOVE SKIN · HERO DEFAULT',
+                            color: MangaColors.white,
+                            onPressed: () async {
+                              await profile.clearEquippedSkin();
+                              if (!mounted) return;
+                              _toast('Default hero portrait restored.');
+                            },
+                          ),
+                        ),
                       const SizedBox(height: 8),
                       MangaButton(
                         label: data.isProUser ? 'PRO IS ACTIVE' : 'SEE PRO PERKS',

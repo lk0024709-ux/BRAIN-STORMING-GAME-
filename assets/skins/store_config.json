@@ -1,0 +1,109 @@
+{
+  "store_config": {
+    "coin_color": "#FFD700",
+    "heart_color": "#FF0000",
+    "coin_text_suffix": "coin",
+    "space_color": "#0A0E1A",
+    "level_label": "Lv.12",
+    "coin_balance_sample": 1240,
+    "asset_format": "512x512 PNG transparent",
+    "border_width_px": 8,
+    "frames": {
+      "hexagon": {
+        "rarity": "common",
+        "border": "#00FFFF",
+        "shape": "hex"
+      },
+      "octagon": {
+        "rarity": "rare",
+        "border": "#8A2BE2",
+        "shape": "oct"
+      },
+      "diamond": {
+        "rarity": "epic",
+        "border": "#FF00FF",
+        "shape": "diamond"
+      },
+      "pentagon": {
+        "rarity": "legendary",
+        "border": "#00BFFF",
+        "shape": "pentagon",
+        "heart": true
+      },
+      "triangle": {
+        "rarity": "mythic",
+        "border": "#FF4500",
+        "shape": "triangle",
+        "heart": true
+      },
+      "golden_hex": {
+        "rarity": "ultimate",
+        "border": "#FFD700",
+        "shape": "golden_hex",
+        "heart": true
+      }
+    },
+    "skins": [
+      {
+        "id": 1,
+        "name": "Neon Ninja",
+        "price": 500,
+        "frame": "hexagon",
+        "heart": false,
+        "asset": "assets/skins/cards/neon_ninja.png",
+        "equipped_asset": "assets/skins/cards/neon_ninja_equipped.png",
+        "bust": "assets/skins/busts/neon_ninja.png"
+      },
+      {
+        "id": 2,
+        "name": "Cyber Samurai",
+        "price": 700,
+        "frame": "octagon",
+        "heart": false,
+        "asset": "assets/skins/cards/cyber_samurai.png",
+        "equipped_asset": "assets/skins/cards/cyber_samurai_equipped.png",
+        "bust": "assets/skins/busts/cyber_samurai.png"
+      },
+      {
+        "id": 3,
+        "name": "Shadow Assassin",
+        "price": 600,
+        "frame": "diamond",
+        "heart": false,
+        "asset": "assets/skins/cards/shadow_assassin.png",
+        "equipped_asset": "assets/skins/cards/shadow_assassin_equipped.png",
+        "bust": "assets/skins/busts/shadow_assassin.png"
+      },
+      {
+        "id": 4,
+        "name": "Frost Warrior",
+        "price": 800,
+        "frame": "pentagon",
+        "heart": true,
+        "asset": "assets/skins/cards/frost_warrior.png",
+        "equipped_asset": "assets/skins/cards/frost_warrior_equipped.png",
+        "bust": "assets/skins/busts/frost_warrior.png"
+      },
+      {
+        "id": 5,
+        "name": "Inferno Mask",
+        "price": 900,
+        "frame": "triangle",
+        "heart": true,
+        "asset": "assets/skins/cards/inferno_mask.png",
+        "equipped_asset": "assets/skins/cards/inferno_mask_equipped.png",
+        "bust": "assets/skins/busts/inferno_mask.png"
+      },
+      {
+        "id": 6,
+        "name": "Golden Emperor",
+        "price": 1200,
+        "frame": "golden_hex",
+        "heart": true,
+        "asset": "assets/skins/cards/golden_emperor.png",
+        "equipped_asset": "assets/skins/cards/golden_emperor_equipped.png",
+        "bust": "assets/skins/busts/golden_emperor.png"
+      }
+    ]
+  }
+}

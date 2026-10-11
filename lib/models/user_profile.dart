@@ -23,6 +23,8 @@ class UserProfile {
     required this.soundOn,
     required this.nameplateId,
     required this.ownedNameplates,
+    required this.ownedSkins,
+    required this.equippedSkinId,
   });
 
   factory UserProfile.fresh() {
@@ -46,6 +48,8 @@ class UserProfile {
       soundOn: true,
       nameplateId: 'classic',
       ownedNameplates: ['classic'],
+      ownedSkins: <String>[],
+      equippedSkinId: '',
     );
   }
 
@@ -69,6 +73,12 @@ class UserProfile {
   final String nameplateId;
   final List<String> ownedNameplates;
 
+  /// Battle Dojo skins bought with coins (ids from `SkinCatalog`).
+  final List<String> ownedSkins;
+
+  /// Empty means the default hero portrait.
+  final String equippedSkinId;
+
   RankTier get forgedTier => RankTier.fromIndex(forgedRankIndex);
 
   RankTier? get nextTier => forgedTier.next;
@@ -80,6 +90,10 @@ class UserProfile {
 
   int get startingCoins =>
       isChild ? AppConfig.childStartingCoins : AppConfig.standardStartingCoins;
+
+  bool get hasEquippedSkin => equippedSkinId.isNotEmpty;
+
+  bool ownsSkin(String skinId) => ownedSkins.contains(skinId);
 
   NameplateStyle get equippedNameplate {
     if (isProUser) return NameplateStyle.proGold;
@@ -111,6 +125,8 @@ class UserProfile {
     bool? soundOn,
     String? nameplateId,
     List<String>? ownedNameplates,
+    List<String>? ownedSkins,
+    String? equippedSkinId,
   }) {
     return UserProfile(
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
@@ -132,6 +148,8 @@ class UserProfile {
       soundOn: soundOn ?? this.soundOn,
       nameplateId: nameplateId ?? this.nameplateId,
       ownedNameplates: ownedNameplates ?? this.ownedNameplates,
+      ownedSkins: ownedSkins ?? this.ownedSkins,
+      equippedSkinId: equippedSkinId ?? this.equippedSkinId,
     );
   }
 }
