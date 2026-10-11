@@ -34,6 +34,7 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
   - slower Solved — +0 coins, +5 XP
   - Pro doubles XP only.
 - **Ranks** are forged, not automatic. Bronze 0–1k, Silver 1k–5k, Gold 5k–20k, Diamond 20k+. Cross a threshold and **Evolve Rank** plays the medal-forging celebration.
+- **Battle music** is a quiet, original, instrumental cyber/synthwave loop that plays only while a battle is open. It pauses when the app is backgrounded, resumes on return, and stops when the battle ends. Turn it off with the music button in the battle header or the Settings switch. That switch is separate from sound effects and is saved on the device. Music never plays on onboarding or home. The track is CC0 and documented in `assets/audio/LICENSE.md`.
 - **Shop** lets players spend earned coins on booster tokens and nameplates.
 - **Pro** (`brainspeed_iq_pro`, non-consumable): 2× XP, golden nameplate, and crown badge. Under 13 must pass a parent math check before the Play purchase sheet opens.
 
@@ -42,11 +43,13 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
 ```
 lib/
   models/        question, age-based math levels, rank, reward, profile, nameplates
-  services/      QuestionGenerator, RewardEngine, IAPService, storage
-  controllers/   ProfileController, GameController
+  services/      QuestionGenerator, RewardEngine, IAPService, storage, battle music player
+  controllers/   ProfileController, GameController, MusicController
+  tools/audio/   generator for the battle loop (developer tool; not part of the app)
   screens/       onboarding, home, 120-level map, gameplay, rank, shop, pro, settings, legal
   widgets/       neo-brutalist chrome, generated avatars, cloud, comic popup, forge
 assets/images/   generated hero and rival portraits
+assets/audio/    battle loop (battle_loop.ogg) and LICENSE.md
 .github/workflows/build_apk.yml
 android/         AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0
 ```
@@ -89,10 +92,17 @@ Caching, because the Gradle build is ~85% of the run: `setup-java` caches `~/.gr
 
 This repo is Android-first because the requested pipeline is an APK. To add iOS, create the platform files and configure the same non-consumable product in App Store Connect.
 
+## Battle music
+
+- `lib/services/battle_music_player.dart` wraps [audioplayers](https://pub.dev/packages/audioplayers) `^6.5.1`. That release supports Flutter 3.27+ and Dart 3.6+, and pub picks the newest compatible release. Playback uses `ReleaseMode.loop`, so the track repeats without restarting the screen.
+- `lib/controllers/music_controller.dart` owns the one player for the whole app. Gameplay declares ownership in `initState` and withdraws it in `dispose`, so route rebuilds never start a second track. All player calls run through one serialized queue. Plugin errors are caught, music is marked unavailable for that battle, and gameplay continues.
+- The track is `assets/audio/battle_loop.ogg` (38.4 s, 100 BPM). `tools/audio/generate_battle_loop.py` regenerates it deterministically from original synthesis. Regenerate with `python3 -m venv .venv-audio && .venv-audio/bin/pip install numpy soundfile && .venv-audio/bin/python tools/audio/generate_battle_loop.py`.
+- The app does not create the native player until a battle first plays. Startup, onboarding, and home therefore do not touch audio hardware.
+
 ## Tests
 
 ```bash
 flutter test
 ```
 
-Covers the age-gated startup, generated character assets, all 120 age-appropriate level generators, chapter mapping, unlock/retry progression, question choices (kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.
+Covers the age-gated startup and the startup retry path, the START BATTLE navigation regression (pushed gameplay routes must see the app-wide providers), battle music start, loop, mute, lifecycle pause/resume, and stop on exit (with a fake player), the music and sound settings being separate, generated character assets, all 120 age-appropriate level generators, chapter mapping, unlock/retry progression, question choices (kids stay on +/−), reward edges at 5.0 / 5.1 / 12.0 / 12.1 / 25.0 / 25.1, Pro XP doubling, rank forge thresholds, paid second-chance timing/settlement, and protection against double-spending a booster on rapid taps.

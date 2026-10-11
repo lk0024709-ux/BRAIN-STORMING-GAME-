@@ -13,6 +13,9 @@ dependencies:
   provider: ^6.1.5+1
   shared_preferences: ^2.5.6
   in_app_purchase: ^3.3.1
+  # 6.5.1+ supports Flutter 3.27+ / Dart 3.6+ (pub picks the newest release
+  # that matches the project's SDK). Battle music only.
+  audioplayers: ^6.5.1
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +26,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/audio/
