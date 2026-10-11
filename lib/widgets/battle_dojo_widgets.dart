@@ -472,39 +472,41 @@ class _BattleAnswerCardState extends State<BattleAnswerCard> {
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
 
-    final Color border;
-    final Color fill;
-    final Color letterColor;
-    final Color textColor;
-    final double glow;
-
-    switch (widget.state) {
-      case BattleAnswerState.idle:
-        border = widget.accent;
-        fill = CyberPalette.panel;
-        letterColor = widget.accent;
-        textColor = CyberPalette.text;
-        glow = 0.45;
-      case BattleAnswerState.correct:
-        border = CyberPalette.mint;
-        fill = CyberPalette.mint.withValues(alpha: 0.18);
-        letterColor = CyberPalette.mint;
-        textColor = CyberPalette.text;
-        glow = 0.7;
-      case BattleAnswerState.wrong:
-        border = CyberPalette.pink;
-        fill = CyberPalette.pink.withValues(alpha: 0.18);
-        letterColor = CyberPalette.pink;
-        textColor = CyberPalette.text;
-        glow = 0.6;
-      case BattleAnswerState.dimmed:
-      case BattleAnswerState.removed:
-        border = CyberPalette.edge.withValues(alpha: 0.4);
-        fill = CyberPalette.panelDeep.withValues(alpha: 0.6);
-        letterColor = CyberPalette.muted.withValues(alpha: 0.5);
-        textColor = CyberPalette.muted.withValues(alpha: 0.5);
-        glow = 0;
-    }
+    final style = switch (widget.state) {
+      BattleAnswerState.idle => (
+          border: widget.accent,
+          fill: CyberPalette.panel,
+          letter: widget.accent,
+          text: CyberPalette.text,
+          glow: 0.45,
+        ),
+      BattleAnswerState.correct => (
+          border: CyberPalette.mint,
+          fill: CyberPalette.mint.withValues(alpha: 0.18),
+          letter: CyberPalette.mint,
+          text: CyberPalette.text,
+          glow: 0.7,
+        ),
+      BattleAnswerState.wrong => (
+          border: CyberPalette.pink,
+          fill: CyberPalette.pink.withValues(alpha: 0.18),
+          letter: CyberPalette.pink,
+          text: CyberPalette.text,
+          glow: 0.6,
+        ),
+      BattleAnswerState.dimmed || BattleAnswerState.removed => (
+          border: CyberPalette.edge.withValues(alpha: 0.4),
+          fill: CyberPalette.panelDeep.withValues(alpha: 0.6),
+          letter: CyberPalette.muted.withValues(alpha: 0.5),
+          text: CyberPalette.muted.withValues(alpha: 0.5),
+          glow: 0.0,
+        ),
+    };
+    final border = style.border;
+    final fill = style.fill;
+    final letterColor = style.letter;
+    final textColor = style.text;
+    final glow = style.glow;
 
     return AnimatedScale(
       scale: _down && enabled ? 0.96 : 1,
