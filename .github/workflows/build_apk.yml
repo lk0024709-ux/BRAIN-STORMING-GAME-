@@ -97,26 +97,23 @@ jobs:
         run: flutter test
 
 
-      - name: TEMP report failures
-        if: failure()
+      # Reports the failing test output on the pull request that triggered the
+      # run. Pull requests only; a push to a branch has no PR to comment on.
+      - name: Report failures on the pull request
+        if: failure() && github.event_name == 'pull_request'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set +e
           {
-            echo 'Analyzer:'
+            echo "CI failed on ${GITHUB_SHA::7}. Full test output:"
             echo '```'
-            flutter analyze --no-fatal-infos 2>&1 | tail -c 20000
+            flutter test --reporter expanded 2>&1 | tail -c 250000
             echo '```'
           } > body.md
-          {
-            echo 'Tests:'
-            echo '```'
-            flutter test 2>&1 | tail -c 60000
-            echo '```'
-          } >> body.md
-          gh pr comment 6 --body-file body.md || true
+          gh pr comment "$PR_NUMBER" --body-file body.md || true
 
       # Conditionally skip the heavy APK build on PRs to save CI minutes
       - name: Build Release APK
