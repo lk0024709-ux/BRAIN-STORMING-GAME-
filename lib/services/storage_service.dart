@@ -34,6 +34,8 @@ class StorageService {
   static const keyMusic = 'music_on';
   static const keyNameplate = 'nameplate';
   static const keyOwned = 'owned_nameplates';
+  static const keyOwnedSkins = 'owned_skins';
+  static const keyEquippedSkin = 'equipped_skin';
 
   UserProfile read() {
     final owned = _prefs.getStringList(keyOwned) ?? const ['classic'];
@@ -57,6 +59,8 @@ class StorageService {
       soundOn: _prefs.getBool(keySound) ?? true,
       nameplateId: _prefs.getString(keyNameplate) ?? 'classic',
       ownedNameplates: owned,
+      ownedSkins: _prefs.getStringList(keyOwnedSkins) ?? const <String>[],
+      equippedSkinId: _prefs.getString(keyEquippedSkin) ?? '',
     );
   }
 
@@ -80,6 +84,8 @@ class StorageService {
     await _prefs.setBool(keySound, profile.soundOn);
     await _prefs.setString(keyNameplate, profile.nameplateId);
     await _prefs.setStringList(keyOwned, profile.ownedNameplates);
+    await _prefs.setStringList(keyOwnedSkins, profile.ownedSkins);
+    await _prefs.setString(keyEquippedSkin, profile.equippedSkinId);
   }
 
   /// Battle music is a separate switch from sound effects. Defaults to on.

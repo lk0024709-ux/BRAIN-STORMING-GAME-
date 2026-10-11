@@ -6,6 +6,7 @@ import '../controllers/game_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/age_band.dart';
 import '../models/math_level.dart';
+import '../models/skin_shop.dart';
 import '../theme/cyber_palette.dart';
 import '../theme/manga_theme.dart';
 import '../widgets/cyber_widgets.dart';
@@ -46,6 +47,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<ProfileController>().profile;
+    final equippedSkin = SkinCatalog.defaults.byId(profile.equippedSkinId);
     final currentLevel = profile.levelsCompleted + 1;
     final level = MathLevelInfo.forAge(profile.userAge, currentLevel);
     final completedCoreLevels = profile.levelsCompleted
@@ -125,8 +127,12 @@ class HomeScreen extends StatelessWidget {
                             name: profile.nickname.isEmpty
                                 ? 'HERO'
                                 : profile.nickname.toUpperCase(),
-                            detail: '${profile.forgedTier.label} · LV $currentLevel',
+                            detail: equippedSkin == null
+                                ? '${profile.forgedTier.label} · LV $currentLevel'
+                                : '${equippedSkin.name.toUpperCase()} SKIN',
                             stats: 'ACCURACY $accuracy% · BEST $bestTime',
+                            badge: equippedSkin?.name.toUpperCase(),
+                            portraitAsset: equippedSkin?.bustAsset,
                             pro: profile.isProUser,
                           ),
                         ),
@@ -316,6 +322,8 @@ class _CyberCharacterCard extends StatelessWidget {
     required this.detail,
     required this.stats,
     this.pro = false,
+    this.badge,
+    this.portraitAsset,
   });
 
   final bool isRival;
@@ -323,6 +331,12 @@ class _CyberCharacterCard extends StatelessWidget {
   final String detail;
   final String stats;
   final bool pro;
+
+  /// Overrides the HERO / RIVAL tag, e.g. with the equipped skin name.
+  final String? badge;
+
+  /// Overrides the default portrait, e.g. with the equipped skin bust.
+  final String? portraitAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -344,11 +358,13 @@ class _CyberCharacterCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
-                  isRival ? 'RIVAL' : 'HERO',
-                  style: const TextStyle(
+                  badge ?? (isRival ? 'RIVAL' : 'HERO'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
                     color: CyberPalette.text,
                     fontWeight: FontWeight.w900,
-                    fontSize: 11,
+                    fontSize: badge == null ? 11 : 9,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -357,9 +373,10 @@ class _CyberCharacterCard extends StatelessWidget {
             const SizedBox(height: 3),
             Expanded(
               child: Image.asset(
-                isRival
-                    ? 'assets/images/rival_avatar.png'
-                    : 'assets/images/hero_avatar.png',
+                portraitAsset ??
+                    (isRival
+                        ? 'assets/images/rival_avatar.png'
+                        : 'assets/images/hero_avatar.png'),
                 fit: BoxFit.contain,
                 alignment: Alignment.bottomCenter,
                 semanticLabel: isRival ? 'Rival portrait' : 'Hero portrait',

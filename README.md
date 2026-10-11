@@ -35,21 +35,30 @@ Pehli screen age slider (6–60+) aur Terms + Privacy checkbox maangti hai. The 
   - Pro doubles XP only.
 - **Ranks** are forged, not automatic. Bronze 0–1k, Silver 1k–5k, Gold 5k–20k, Diamond 20k+. Cross a threshold and **Evolve Rank** plays the medal-forging celebration.
 - **Battle music** is a quiet, original, instrumental cyber/synthwave loop that plays only while a battle is open. It pauses when the app is backgrounded, resumes on return, and stops when the battle ends. Turn it off with the music button in the battle header or the Settings switch. That switch is separate from sound effects and is saved on the device. Music never plays on onboarding or home. The track is CC0 and documented in `assets/audio/LICENSE.md`.
-- **Shop** lets players spend earned coins on booster tokens and nameplates.
+- **Shop** lets players spend earned coins on booster tokens, nameplates, and the
+  **Battle Dojo skin vault**: six polygon-framed skins (hex common → golden hex
+  ultimate) with prices from 500 to 1200 coins. Buying a skin equips it and
+  swaps the hero portrait; `docs/SKIN_VAULT.md` documents the asset pack, the
+  prompts, and the negative prompts.
 - **Pro** (`brainspeed_iq_pro`, non-consumable): 2× XP, golden nameplate, and crown badge. Under 13 must pass a parent math check before the Play purchase sheet opens.
 
 ## Project map
 
 ```
 lib/
-  models/        question, age-based math levels, rank, reward, profile, nameplates
+  models/        question, age-based math levels, rank, reward, profile,
+                 nameplates, polygon skin vault (skin_shop)
   services/      QuestionGenerator, RewardEngine, IAPService, storage, battle music player
   controllers/   ProfileController, GameController, MusicController
   tools/audio/   generator for the battle loop (developer tool; not part of the app)
   screens/       onboarding, home, 120-level map, gameplay, rank, shop, pro, settings, legal
-  widgets/       neo-brutalist chrome, generated avatars, cloud, comic popup, forge
+  widgets/       neo-brutalist chrome, generated avatars, cloud, comic popup,
+                 forge, polygon store cards (skin_card)
 assets/images/   generated hero and rival portraits
 assets/audio/    battle loop (battle_loop.ogg) and LICENSE.md
+assets/skins/    raw busts, 512x512 polygon store cards, store_config.json
+tools/           tools/generate_store_assets.py + preview contact sheet
+docs/            SKIN_VAULT.md (asset + prompt contract)
 .github/workflows/build_apk.yml
 android/         AGP 9.3.3, Kotlin 2.4.20, Gradle 9.5.0
 ```

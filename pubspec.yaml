@@ -27,3 +27,5 @@ flutter:
   assets:
     - assets/images/
     - assets/audio/
+    - assets/skins/cards/
+    - assets/skins/busts/

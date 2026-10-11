@@ -4,6 +4,7 @@ import '../config/app_config.dart';
 import '../models/nameplate.dart';
 import '../models/rank_tier.dart';
 import '../models/reward.dart';
+import '../models/skin_shop.dart';
 import '../models/user_profile.dart';
 import '../services/storage_service.dart';
 
@@ -22,6 +23,8 @@ class ProfileController extends ChangeNotifier {
   String get nickname => profile.nickname;
   bool get isChild => profile.isChild;
   bool get canEvolve => profile.canEvolve;
+  String get equippedSkinId => profile.equippedSkinId;
+  List<String> get ownedSkins => profile.ownedSkins;
   RankTier get forgedTier => profile.forgedTier;
 
   Future<void> load() async {
@@ -150,6 +153,33 @@ class ProfileController extends ChangeNotifier {
     return null;
   }
 
+  /// Buys [skin] when the purse allows it, otherwise equips it if owned.
+  /// Returns `null` on success or a player-facing message on refusal.
+  Future<String?> buyOrEquipSkin(SkinItem skin) async {
+    if (profile.ownsSkin(skin.id)) {
+      if (profile.equippedSkinId == skin.id) return null;
+      profile = profile.copyWith(equippedSkinId: skin.id);
+      await _save();
+      return null;
+    }
+    if (profile.coins < skin.price) {
+      return 'Not enough coins for ${skin.name}.';
+    }
+    profile = profile.copyWith(
+      coins: profile.coins - skin.price,
+      ownedSkins: [...profile.ownedSkins, skin.id],
+      equippedSkinId: skin.id,
+    );
+    await _save();
+    return null;
+  }
+
+  Future<void> clearEquippedSkin() async {
+    if (profile.equippedSkinId.isEmpty) return;
+    profile = profile.copyWith(equippedSkinId: '');
+    await _save();
+  }
+
   Future<void> applyCorrect({
     required RewardResult reward,
     required int timeMs,
@@ -211,6 +241,7 @@ class ProfileController extends ChangeNotifier {
       fiftyTokens: 0,
       chanceTokens: 0,
       nameplateId: profile.isProUser ? profile.nameplateId : 'classic',
+      equippedSkinId: '',
     );
     await _save();
   }
