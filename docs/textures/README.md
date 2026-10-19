@@ -10,7 +10,7 @@ The generator uses repeat-wrapped image textures connected to Principled BSDF
 Base Color, smart-project UVs, and packed GLB images (AUTO/PNG).
 
 Run with Blender 4.2+: `blender --background --python tools/generate_buildings.py`
-or Python 3.11 with `bpy==4.2.0` and `numpy<2` installed:
+or Python 3.11 with `bpy==4.2.23` and `numpy<2` installed:
 `python tools/generate_buildings.py`. Then `python tools/validate_buildings.py`.
 
 Blender is Z-up; exported glTF is Y-up. The exported building root and every

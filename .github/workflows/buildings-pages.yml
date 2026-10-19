@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,9 +24,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
-          pip install bpy==4.2.0 'numpy<2'
+          pip install bpy==4.2.23 'numpy<2'
       - name: Generate four textured buildings
-        run: python tools/generate_buildings.py
+        run: |
+          set -o pipefail
+          python -u tools/generate_buildings.py 2>&1 | tee /tmp/buildings.log
+      - name: Generator diagnostics
+        if: always()
+        run: cat /tmp/buildings.log >> "$GITHUB_STEP_SUMMARY"
       - name: Validate embedded textures, UVs, origins and dimensions
         run: python tools/validate_buildings.py
       - uses: actions/upload-artifact@v4
@@ -40,7 +45,7 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       pages: write
       id-token: write
