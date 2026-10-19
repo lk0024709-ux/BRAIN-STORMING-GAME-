@@ -1,0 +1,55 @@
+name: Build buildings and deploy Pages
+on:
+  push:
+    branches: [main, 'arena/040edb7a-brain-storming-game']
+    paths: ['docs/**', 'tools/*buildings.py', '.github/workflows/buildings-pages.yml']
+  pull_request:
+    branches: [main]
+    paths: ['docs/**', 'tools/*buildings.py', '.github/workflows/buildings-pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: buildings-pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Blender Python and system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
+          pip install bpy==4.2.0 'numpy<2'
+      - name: Generate four textured buildings
+        run: python tools/generate_buildings.py
+      - name: Validate embedded textures, UVs, origins and dimensions
+        run: python tools/validate_buildings.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: textured-buildings
+          path: docs/models/buildings/*.glb
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
